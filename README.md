@@ -20,17 +20,21 @@ Possible scripts:
 &nbsp;&nbsp;&nbsp;T;B3;13 3  
 &nbsp;&nbsp;&nbsp;T;\_S; 7 0  
 &nbsp;&nbsp;*map_name* equal to *_S* refers to self.  
+  
 &nbsp;P;*direction*;*map_name*;*signature*  
 &nbsp;&nbsp;Being on a given field and clicking *y* while the pointer is directed in a correct way results in transition to another field defined by *signature* on the map *map_name*.  
 &nbsp;&nbsp;For example,  
 &nbsp;&nbsp;&nbsp;P;N;B3;13 5  
+  
 &nbsp;WS;*direction*  
 &nbsp;&nbsp;Being on a given field and moving in a given direction results in transition between maps in the overworld as in the game's system.  
 &nbsp;&nbsp;For example,  
 &nbsp;&nbsp;&nbsp;WS;N  
 &nbsp;&nbsp;On a map B3, signature 15,7 leads to a map B2, signature 0,7.  
+  
 &nbsp;R  
 &nbsp;&nbsp;Clicking *y* on a given field reverses the pointer.  
+
 
 Other controls:  
 &nbsp;t - switch ground truth mode.  
