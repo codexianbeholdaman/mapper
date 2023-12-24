@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+
+<html lang="en">
+	<head>
+		<title>Mapping stuff</title>
+	</head>
+
+	<body>
+		<div id="maps" style="width:400px; display:inline-block; vertical-align:top; overflow:scroll">
+			<div id="adder"></div>
+			<div id="maps_list" style="height:800px; overflow:scroll"></div>
+		</div>
+
+		<div id="map_proper" style="position:relative; display:inline-block; vertical-align:top"></div>
+		<div id="data" style="position:relative; display:inline-block">
+			<div id="point_data" style="width:600px; vertical-align:top; position:relative; border:3px dotted #663300">
+				<label for="general" style="font-size:17px">General</label> <textarea name="general" id="general_text" style="width:500px; height:200px; font-size:20px"></textarea>
+				<label for="scripts" style="font-size:17px">Scripts</label> <textarea name="scripts" id="scripts_text" style="width:500px; height:200px; font-size:20px"></textarea>
+				<label for="shorthand" style="font-size:17px">Shorthand</label> <input name="shorthand" id="shorthand_text" style="width:200px; height:40px; font-size:20px"/>
+				<br>
+				<label><input type="checkbox" name="usable" id="usable"/>Usable</label>
+				<label><input type="checkbox" name="North_border" id="North_border"/>N</label>
+				<label><input type="checkbox" name="West_border" id="West_border"/>W</label>
+				<label><input type="checkbox" name="East_border" id="East_border"/>E</label>
+				<label><input type="checkbox" name="South_border" id="South_border"/>S</label>
+
+				<div style="font-weight:bold">Cell type</div>
+				<label><input type="checkbox" name="desert" id="desert"/>Desert</label>
+				<label><input type="checkbox" name="water" id="water"/>Water</label>
+				<div style="position:absolute; width:120px; height:50px; line-height:50px; bottom:0; right:0; background:#663300; color:white; text-align:center">Point data</div>
+			</div>
+
+			<div id="general_data" style="width:600px; vertical-align:top; position:relative; border:3px dotted #99004D">
+				<label for="map_general" style="font-size:17px">General</label> <textarea name="map_general" id="map_general" style="width:500px; height:200px; font-size:20px"></textarea>
+				<input type="checkbox" name="ground_truth" id="ground_truth"/>
+				<label for="ground_truth">Ground Truth mode</label>
+				<div>
+					<label for="fly" style="font-size:20px">Fly</label> <input name="fly" id="fly" style="width:200px; height:30px; font-size:20px"/>
+				</div>
+				<div style="position:absolute; width:120px; height:50px; line-height:50px; bottom:0; right:0; background:#99004D; color:white; text-align:center">Map data</div>
+			</div>
+		</div>
+
+		<div>
+			<a style="width:70px; height:70px; line-height:70px; background-color:#440000; text-align:center; color:white; display:inline-block; font-size:17px" id="saver">Save</a>
+			<label style="width:70px; height:70px; line-height:70px; background-color:#440000; text-align:center; color:white; display:inline-block; font-size:17px"><input id="loader" multiple type="file" style="display:none"/>Load</label>
+		</div>
+
+		<script src="presentation.js"></script>
+		<script src="mapping.js"></script>
+	</body>
+</html>
