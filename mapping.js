@@ -2,6 +2,8 @@ var GRID_SIZE = 16;
 
 var general_text = document.getElementById('general_text');
 var scripts_text = document.getElementById('scripts_text');
+var images_text = document.getElementById('images_text');
+
 var shorthand_text = document.getElementById('shorthand_text');
 var fly = document.getElementById('fly');
 var maps_list = document.getElementById("maps_list");
@@ -159,6 +161,7 @@ function save_focus(map_switch=false){
 
 		points_data[current_state.map][coordinate]['general'] = general_text.value;
 		points_data[current_state.map][coordinate]['scripts'] = scripts_text.value;
+		points_data[current_state.map][coordinate]['images'] = images_text.value;
 		points_data[current_state.map][coordinate]['input'] = shorthand_text.value;
 
 		points_data[current_state.map][coordinate]['desert'] = desert.checked;
@@ -289,6 +292,7 @@ function create_data_dump(){
 			'input': point.input, //Move to shorthand
 			'general': point.general??'',
 			'scripts': point.scripts??'',
+			'images': point.images??'',
 			'desert': point.desert?true:false,
 			'water': point.water?true:false
 		}
@@ -435,6 +439,7 @@ function create_grid(grid_size){
 
 				this._marking.style.background = 'linear-gradient(to right bottom, #AA0000 50%, rgba(0, 0, 0, 0) 50%)';
 				current_focus = this;
+				images_text.value = points_data[current_state.map][current_focus._signature].images;
 				scripts_text.value = points_data[current_state.map][current_focus._signature].scripts;
 				shorthand_text.value = points_data[current_state.map][current_focus._signature].input;
 				general_text.value = points_data[current_state.map][current_focus._signature].general;
@@ -648,12 +653,8 @@ document.addEventListener('keydown', function(e){
 				var proper_script = script.split(';');
 
 				if (proper_script[0] == 'P' && proper_script[1] == dir_to_cardinal[direction_int]){
-					var old_direction = current_state.direction;
-					if (proper_script[2] != current_state.map) change_map(proper_script[2]);
-					current_state.direction = old_direction;
-					current_state.marked = points[proper_script[3]];
+					enforce_new_state({'map':proper_script[2], 'signature':proper_script[3], 'direction':current_state.direction});
 					subsequent_changes.push([Object.assign({}, current_state), []]);
-					update_presentation(current_state);
 				}
 
 				if (proper_script[0] == 'R' && proper_script[1] == dir_to_cardinal[direction_int]){
