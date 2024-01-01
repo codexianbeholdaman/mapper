@@ -16,8 +16,12 @@ keys_mapping = {
         keyboard.KeyCode.from_char('*'): 'w'
 }
 
+dead = False
 def on_press(key):
-    if key in keys_mapping:
+    global dead
+    if key == keyboard.KeyCode.from_char('`'):
+        dead = not dead
+    if key in keys_mapping and not dead:
         subprocess.run(["xdotool", "key", "--window", str(mozilla_pid), keys_mapping[key]])
 
 with keyboard.Listener(on_press=on_press) as listener:

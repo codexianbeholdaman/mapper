@@ -1,22 +1,25 @@
 var GRID_SIZE = 16;
 
-var general_text = document.getElementById('general_text');
-var scripts_text = document.getElementById('scripts_text');
-var images_text = document.getElementById('images_text');
+var controls = {
+	'general_text': document.getElementById('general_text'),
+	'scripts_text': document.getElementById('scripts_text'),
+	'images_text': document.getElementById('images_text'),
+	'point_images': document.getElementById('point_images'),
 
-var shorthand_text = document.getElementById('shorthand_text');
-var fly = document.getElementById('fly');
-var maps_list = document.getElementById("maps_list");
-var maps_adder = document.getElementById("adder");
-var ground_truth = document.getElementById("ground_truth");
-var map_general = document.getElementById('map_general');
-var desert = document.getElementById('desert');
-var water = document.getElementById('water');
+	'shorthand_text': document.getElementById('shorthand_text'),
+	'fly': document.getElementById('fly'),
+	'maps_list': document.getElementById("maps_list"),
+	'maps_adder': document.getElementById("adder"),
+	'ground_truth': document.getElementById("ground_truth"),
+	'map_general': document.getElementById('map_general'),
+	'desert': document.getElementById('desert'),
+	'water': document.getElementById('water'),
+	'input_used': document.getElementById("usable"),
+	'input_borders': ["North", "East", "South", "West"].map((direction) => document.getElementById(`${direction}_border`)),
+	'order': document.getElementById('order'),
+	'orderer': document.getElementById('orderer')
+}
 
-var input_borders = ["North", "East", "South", "West"].map((direction) => document.getElementById(`${direction}_border`));
-var input_used = document.getElementById("usable");
-
-var map_elements = {};
 var map_element_overlays = {};
 
 var integer_to_dir = {
@@ -61,6 +64,7 @@ current_focus = null;
 
 var points_data = {};
 var general_data = {};
+var is_map_changed = {};
 points_data[current_state.map] = {};
 general_data[current_state.map] = {};
 
@@ -69,10 +73,26 @@ function update_presentation(current_state){
 	current_state['marked']._arrow.innerHTML = dir_to_arrow[current_state.direction];
 }
 
+function set_changer(map){
+	if (map == '_unknown') return;
+	if (is_map_changed[map]) 
+		map_element_overlays[map]._changer.style.backgroundColor = '#88CC00';
+	else
+		map_element_overlays[map]._changer.style.backgroundColor = 'rgba(0,0,0,0)';
+}
+
 function changer(map=null){
 	if (map == null) map=current_state.map;
 	if (map == '_unknown') return;
-	map_element_overlays[map]._changer.style.backgroundColor = '#88CC00';
+	is_map_changed[map] = true;
+	set_changer(map);
+}
+
+function dechanger(map=null){
+	if (map == null) map=current_state.map;
+	if (map == '_unknown') return;
+	is_map_changed[map] = false;
+	set_changer(map);
 }
 
 function proper_background(point_data, signature){
@@ -137,7 +157,10 @@ function update_field(signature){
 }
 
 function update_flight(map_name){
-	if (general_data[map_name]['fly'] && general_data[map_name]['fly']!='undefined' && map_name!='_unknown'){
+	if (map_name == '_unknown') return;
+	if (general_data[map_name]['fly'] == '') map_element_overlays[map_name]._flier.style.display = 'none';
+
+	else if (general_data[map_name]['fly'] && general_data[map_name]['fly']!='undefined'){
 		map_element_overlays[map_name]._flier.style.display = 'inline-block';
 		map_element_overlays[map_name]._flier.onmouseover = function(){this.style.backgroundColor = '#440000';};
 		map_element_overlays[map_name]._flier.onmouseout = function(){this.style.backgroundColor = '#880000';};
@@ -145,7 +168,7 @@ function update_flight(map_name){
 		map_element_overlays[map_name]._flier.onclick = function(){
 			var current_direction = current_state.direction;
 			if (current_direction == -1) current_direction = 0; //By default - northern
-			change_map(map_name);
+			change_map(this._overlay._element._map_name);
 
 			current_state.direction = current_direction;
 			current_state.marked = points[general_data[map_name]['fly']];
@@ -159,18 +182,18 @@ function save_focus(map_switch=false){
 		var coordinate = current_focus._signature;
 		var past_point = Object.assign({}, points_data[current_state.map][coordinate]);
 
-		points_data[current_state.map][coordinate]['general'] = general_text.value;
-		points_data[current_state.map][coordinate]['scripts'] = scripts_text.value;
-		points_data[current_state.map][coordinate]['images'] = images_text.value;
-		points_data[current_state.map][coordinate]['input'] = shorthand_text.value;
+		points_data[current_state.map][coordinate]['general'] = controls.general_text.value;
+		points_data[current_state.map][coordinate]['scripts'] = controls.scripts_text.value;
+		points_data[current_state.map][coordinate]['images'] = controls.images_text.value;
+		points_data[current_state.map][coordinate]['input'] = controls.shorthand_text.value;
 
-		points_data[current_state.map][coordinate]['desert'] = desert.checked;
-		points_data[current_state.map][coordinate]['water'] = water.checked;
+		points_data[current_state.map][coordinate]['desert'] = controls.desert.checked;
+		points_data[current_state.map][coordinate]['water'] = controls.water.checked;
 
-		points_data[current_state.map][coordinate].used = input_used.checked;
+		points_data[current_state.map][coordinate].used = controls.input_used.checked;
 		var ordering = ['N', 'E', 'S', 'W'];
 		for (var index of [0, 1, 2, 3]){
-			 points_data[current_state.map][coordinate].borders[cardinal_to_dir[ordering[index]]] = input_borders[index].checked;
+			 points_data[current_state.map][coordinate].borders[cardinal_to_dir[ordering[index]]] = controls.input_borders[index].checked;
 		}
 
 		if (Object.entries(points_data[current_state.map][coordinate]).sort().toString() !== Object.entries(past_point).sort().toString())
@@ -182,17 +205,22 @@ function save_focus(map_switch=false){
 
 function save_map_data(){
 	save_focus(true);
-	general_data[current_state.map]['ground truth'] = ground_truth.checked;
-	general_data[current_state.map]['fly'] = fly.value
-	general_data[current_state.map]['map general'] = map_general.value
+	general_data[current_state.map]['order'] = controls.order.value
+	general_data[current_state.map]['ground truth'] = controls.ground_truth.checked;
+	general_data[current_state.map]['fly'] = controls.fly.value;
+	general_data[current_state.map]['map general'] = controls.map_general.value;
 }
 
 function load_map_presentation(to_load, map_name){
 	current_state['map'] = map_name;
-	ground_truth.checked = general_data[map_name]['ground truth'];
-	fly.value = general_data[map_name]['fly'];
-	if ('map general' in general_data[map_name]) map_general.value = general_data[map_name]['map general'];
-	else map_general.value = '';
+	controls.ground_truth.checked = general_data[map_name]['ground truth'];
+	controls.fly.value = general_data[map_name]['fly'];
+
+	if ('map general' in general_data[map_name]) controls.map_general.value = general_data[map_name]['map general'];
+	else controls.map_general.value = '';
+
+	if ('order' in general_data[map_name]) controls.order.value = general_data[map_name]['order'];
+	else controls.order.value = '';
 
 	for (var coordinates in to_load) update_field(coordinates);
 
@@ -225,10 +253,11 @@ function create_new_map_overlay(map_name){
 	var new_map_element = document.createElement('div');
 	var flier = document.createElement('div');
 	var changer = document.createElement('div');
+	var text = document.createElement('span');
+	map_overlay.classList.add('map_overlay');
 
 	assign_style_to_element(changer, {
 		'position':'absolute', 
-		//'backgroundColor':'#88CC00',
 		'backgroundColor':'rgba(0, 0, 0, 0)',
 		'top':'5px',
 		'right':'5px',
@@ -238,7 +267,7 @@ function create_new_map_overlay(map_name){
 	});
 	new_map_element._map_name = map_name;
 
-	new_map_element.textContent = map_name;
+	text.textContent = map_name;
 	new_map_element.appendChild(changer);
 	new_map_element.onclick = function(){
 		change_map(this._map_name);
@@ -261,10 +290,12 @@ function create_new_map_overlay(map_name){
 	map_overlay.appendChild(new_map_element);
 	map_overlay.appendChild(flier);
 
+	new_map_element.appendChild(text);
+	map_overlay._text = text;
 	map_overlay._element = new_map_element;
 	map_overlay._changer = changer;
 	map_overlay._flier = flier;
-	flier._map_name = map_name;
+	map_overlay._flier._overlay = map_overlay;
 	return map_overlay;
 }
 
@@ -274,14 +305,14 @@ function initialize_map_data(map_name){
 
 	for (var row_nr = 0; row_nr < grid_size; row_nr+=1){
 		for (var column_nr = 0; column_nr < grid_size; column_nr+=1){
-			points_data[map_name][`${row_nr} ${column_nr}`] = {'used':false, 'borders':[false, false, false, false], 'input':'', 'general':'', 'scripts':''}
+			points_data[map_name][`${row_nr} ${column_nr}`] = {'used':false, 'borders':[false, false, false, false], 'input':'', 'general':'', 'scripts':'', 'images':''}
 		}
 	}
 }
 
 function create_data_dump(){
 	var map_name = current_state['map'];
-	to_save = {'title':map_name, 'ground truth':ground_truth.checked, 'fly':fly.value, 'map general':map_general.value, 'points':{}};
+	to_save = {'title':map_name, 'ground truth':controls.ground_truth.checked, 'fly':controls.fly.value, 'map general':controls.map_general.value, 'order':controls.order.value, 'points':{}};
 
 	for (var point_coordinate in points){
 		var point = points_data[map_name][point_coordinate];
@@ -430,7 +461,9 @@ function create_grid(grid_size){
 
 			points[`${row_nr} ${column_nr}`] = point;
 
-			point.addEventListener('auxclick', function(){
+			point.addEventListener(_CONFIG_ACCESS_POINT_DATA, function(_event){
+				if (_CONFIG_ACCESS_POINT_DATA == 'contextmenu') _event.preventDefault();
+				point_images.innerHTML = '';
 				if (current_focus){
 					current_focus._marking.style.background = 'rgba(0, 0, 0, 0)';
 					save_focus();
@@ -439,20 +472,29 @@ function create_grid(grid_size){
 
 				this._marking.style.background = 'linear-gradient(to right bottom, #AA0000 50%, rgba(0, 0, 0, 0) 50%)';
 				current_focus = this;
-				images_text.value = points_data[current_state.map][current_focus._signature].images;
-				scripts_text.value = points_data[current_state.map][current_focus._signature].scripts;
-				shorthand_text.value = points_data[current_state.map][current_focus._signature].input;
-				general_text.value = points_data[current_state.map][current_focus._signature].general;
+				controls.images_text.value = points_data[current_state.map][current_focus._signature].images;
+				controls.scripts_text.value = points_data[current_state.map][current_focus._signature].scripts;
+				controls.shorthand_text.value = points_data[current_state.map][current_focus._signature].input;
+				controls.general_text.value = points_data[current_state.map][current_focus._signature].general;
 
-				if ('desert' in points_data[current_state.map][current_focus._signature]) desert.checked = points_data[current_state.map][current_focus._signature].desert;
+				if ('desert' in points_data[current_state.map][current_focus._signature]) controls.desert.checked = points_data[current_state.map][current_focus._signature].desert;
 				else desert.checked = false;
-				if ('water' in points_data[current_state.map][current_focus._signature]) water.checked = points_data[current_state.map][current_focus._signature].water;
+				if ('water' in points_data[current_state.map][current_focus._signature]) controls.water.checked = points_data[current_state.map][current_focus._signature].water;
 				else water.checked = false;
 
-				input_used.checked = points_data[current_state.map][current_focus._signature].used;
+				controls.input_used.checked = points_data[current_state.map][current_focus._signature].used;
 				var ordering = ['N', 'E', 'S', 'W'];
 				for (var index of [0, 1, 2, 3]){
-					input_borders[index].checked = points_data[current_state.map][current_focus._signature].borders[cardinal_to_dir[ordering[index]]];
+					controls.input_borders[index].checked = points_data[current_state.map][current_focus._signature].borders[cardinal_to_dir[ordering[index]]];
+				}
+				for (var image of points_data[current_state.map][current_focus._signature].images.split('\n')){
+					if (image){
+						var pic = document.createElement('img');
+						pic.src = image;
+						pic.alt = "image should be here";
+						pic.width = "600";
+						point_images.appendChild(pic);
+					}
 				}
 			});
 
@@ -487,7 +529,7 @@ function create_map_adder(){
 	assign_style_to_element(add_map, map_element_style);
 	add_map.style['backgroundColor'] = '#008800';
 	add_map.placeholder = 'Map name';
-	maps_adder.appendChild(add_map);
+	controls.maps_adder.appendChild(add_map);
 
 	var map_adder = document.createElement('div');
 	assign_style_to_element(map_adder, map_element_style);
@@ -500,23 +542,48 @@ function create_map_adder(){
 		general_data[map_name] = {};
 		general_data[map_name]['ground truth'] = false;
 		general_data[map_name]['fly'] = "";
+		general_data[map_name]['order'] = "";
+		is_map_changed[map_name] = false;
 
 		var map_overlay = create_new_map_overlay(map_name);
-		map_elements[map_name] = map_overlay._element;
 		map_element_overlays[map_name] = map_overlay;
 
-		maps_list.appendChild(map_overlay);
+		controls.maps_list.appendChild(map_overlay);
 
 		initialize_map_data(map_name);
 		change_map(map_name);
 	};
-	maps_adder.appendChild(map_adder);
+	controls.maps_adder.appendChild(map_adder);
 }
 
 var points = create_grid(GRID_SIZE);
 create_map_adder();
 var subsequent_changes = [];
 initialize_map_data('_unknown');
+controls.orderer.onclick = function(){
+	if (current_state.map != '_unknown')
+		map_element_overlays[current_state.map]._element.style.backgroundColor = '#880000';
+
+	var sorted_maps = [];
+	for (var map_name in general_data){
+		if (map_name == '_unknown') continue;
+		sorted_maps.push([general_data[map_name]['order'], map_name])
+	}
+	sorted_maps.sort();
+
+	var sorted_divs = document.getElementsByClassName('map_overlay');
+	for (var [index, map_data] of sorted_maps.entries()){
+		var map_name = map_data[1];
+		sorted_divs[index]._element._map_name = map_name;
+		sorted_divs[index]._text.innerHTML = map_name;
+		map_element_overlays[map_name] = sorted_divs[index];
+		update_flight(map_name);
+		set_changer(map_name);
+	}
+
+	if (current_state.map != '_unknown')
+		map_element_overlays[current_state.map]._element.style.backgroundColor = 'black';
+}
 
 
 function enforce_new_state(new_state){
@@ -598,18 +665,18 @@ function process_move_forward(e_key){
 				new_place_data.used = true;
 				changes_introduced.push([0, new_place_signature]);
 				new_place_presentation.style['backgroundColor'] = 'white';
-				if (current_focus && current_focus._signature == new_place_signature) input_used.checked = true;
+				if (current_focus && current_focus._signature == new_place_signature) controls.input_used.checked = true;
 			}
 			if (!points_data[current_state.map][current_state.marked._signature].borders[direction_proper]){
 				current_state.marked.style[`border${dir_to_border[direction_proper]}`] = `1px dashed #CCCCCC`;
 				points_data[current_state.map][current_state.marked._signature].borders[direction_proper] = true;
 				changes_introduced.push([1, current_state.marked._signature, direction_proper]);
-				if (current_focus && current_focus._signature == current_state.marked._signature) input_borders[direction_proper].checked = true;
+				if (current_focus && current_focus._signature == current_state.marked._signature) controls.input_borders[direction_proper].checked = true;
 
 				new_place_presentation.style[`border${dir_to_border[(direction_proper+2)%4]}`] = `1px dashed #CCCCCC`;
 				new_place_data.borders[(direction_proper+2)%4] = true;
 				changes_introduced.push([1, new_place_signature, (direction_proper+2)%4]);
-				if (current_focus && current_focus._signature == new_place_signature) input_borders[(direction_proper+2)%4].checked = true;
+				if (current_focus && current_focus._signature == new_place_signature) controls.input_borders[(direction_proper+2)%4].checked = true;
 			}
 		}
 
@@ -728,8 +795,7 @@ document.addEventListener('keydown', function(e){
 });
 
 document.getElementById('saver').onclick = function(){
-	if (current_state.map != '_unknown')
-		map_element_overlays[current_state.map]._changer.style.backgroundColor = 'rgba(0, 0, 0, 0)';
+	dechanger();
 	var points_data = [JSON.stringify(create_data_dump())];
 	var blob = new Blob(points_data, {type : 'text/plain'}); // the blob
 	//window.open(URL.createObjectURL(blob));
@@ -753,22 +819,23 @@ file_input.onchange = () => {
 		var _ = map.text().then(function(result){
 			full_data = JSON.parse(result);
 			map_name = full_data['title'];
+			is_map_changed[map_name] = false;
 
 			general_data[map_name] = {};
 			general_data[map_name]['ground truth'] = full_data['ground truth'];
 			general_data[map_name]['fly'] = full_data['fly'];
+			general_data[map_name]['order'] = full_data['order'];
 
 			if ('map general' in full_data) general_data[map_name]['map general'] = full_data['map general'];
 			else general_data[map_name]['map general'] = '';
 
 			points_data[map_name] = full_data['points']
 
-			if (map_name in map_elements) map_element_overlays[map_name]._changer.style.backgroundColor = 'rgba(0, 0, 0, 0)';
+			if (map_name in map_element_overlays) dechanger(map_name);
 			else{
 				var map_overlay = create_new_map_overlay(map_name);
 				map_element_overlays[map_name] = map_overlay;
-				map_elements[map_name] = map_overlay._element;
-				maps_list.appendChild(map_overlay);
+				controls.maps_list.appendChild(map_overlay);
 				update_flight(map_name);
 			}
 		});

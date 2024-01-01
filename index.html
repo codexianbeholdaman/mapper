@@ -28,6 +28,7 @@
 				<div style="font-weight:bold">Cell type</div>
 				<label><input type="checkbox" name="desert" id="desert"/>Desert</label>
 				<label><input type="checkbox" name="water" id="water"/>Water</label>
+				<div id="point_images"></div>
 				<div style="position:absolute; width:120px; height:50px; line-height:50px; bottom:0; right:0; background:#663300; color:white; text-align:center">Point data</div>
 			</div>
 
@@ -38,6 +39,10 @@
 				<div>
 					<label for="fly" style="font-size:20px">Fly</label> <input name="fly" id="fly" style="width:200px; height:30px; font-size:20px"/>
 				</div>
+
+				<div>
+					<label for="order" style="font-size:20px">Order</label> <input name="order" id="order" style="width:200px; height:30px; font-size:20px"/>
+				</div>
 				<div style="position:absolute; width:120px; height:50px; line-height:50px; bottom:0; right:0; background:#99004D; color:white; text-align:center">Map data</div>
 			</div>
 		</div>
@@ -45,8 +50,10 @@
 		<div>
 			<a style="width:70px; height:70px; line-height:70px; background-color:#440000; text-align:center; color:white; display:inline-block; font-size:17px" id="saver">Save</a>
 			<label style="width:70px; height:70px; line-height:70px; background-color:#440000; text-align:center; color:white; display:inline-block; font-size:17px"><input id="loader" multiple type="file" style="display:none"/>Load</label>
+			<div style="width:70px; height:70px; line-height:70px; background-color:#440000; text-align:center; color:white; display:inline-block; font-size:17px" id="orderer">Order</div>
 		</div>
 
+		<script src="config.js"></script>
 		<script src="presentation.js"></script>
 		<script src="mapping.js"></script>
 	</body>
