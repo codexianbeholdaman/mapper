@@ -1,4 +1,5 @@
 var GRID_SIZE = 16;
+var _local_terrains = TERRAINS[_CONFIG_GAME];
 
 var controls = {
 	'general_text': document.getElementById('general_text'),
@@ -12,13 +13,30 @@ var controls = {
 	'maps_adder': document.getElementById("adder"),
 	'ground_truth': document.getElementById("ground_truth"),
 	'map_general': document.getElementById('map_general'),
-	'desert': document.getElementById('desert'),
-	'water': document.getElementById('water'),
+	'terrains':{},
 	'input_used': document.getElementById("usable"),
 	'input_borders': ["North", "East", "South", "West"].map((direction) => document.getElementById(`${direction}_border`)),
 	'order': document.getElementById('order'),
 	'orderer': document.getElementById('orderer')
 }
+
+function checkboxes_terrains(){
+	var terrains_div = document.getElementById('terrains');
+	for (var terrain in _local_terrains){
+		var _input = document.createElement('input');
+		_input.type = 'checkbox';
+		_input.name = terrain;
+		_input.id = terrain;
+
+		var _label = document.createElement('label');
+		_label.appendChild(_input);
+		_label.innerHTML += terrain[0].toUpperCase() + terrain.slice(1);
+
+		terrains_div.appendChild(_label);
+		controls.terrains[terrain] = _input;
+	}
+}
+checkboxes_terrains();
 
 var map_element_overlays = {};
 
@@ -99,8 +117,9 @@ function proper_background(point_data, signature){
 	if (point_data.used) points[signature].style['backgroundColor'] = 'white';
 	else points[signature].style['backgroundColor'] = 'grey';
 
-	if ('desert' in point_data && point_data.desert==true) points[signature].style.backgroundColor = '#FFD481';
-	if ('water' in point_data && point_data.water==true) points[signature].style.backgroundColor = '#99FFFF';
+	for (var terrain in _local_terrains){
+		if (point_data['terrains'].has(terrain)) points[signature].style.backgroundColor = _local_terrains[terrain]['color'];
+	}
 }
 
 function update_field(signature){
@@ -187,8 +206,9 @@ function save_focus(map_switch=false){
 		points_data[current_state.map][coordinate]['images'] = controls.images_text.value;
 		points_data[current_state.map][coordinate]['input'] = controls.shorthand_text.value;
 
-		points_data[current_state.map][coordinate]['desert'] = controls.desert.checked;
-		points_data[current_state.map][coordinate]['water'] = controls.water.checked;
+		for (var terrain in _local_terrains){
+			if (controls['terrains'][terrain].checked) points_data[current_state.map][coordinate]['terrains'].add(terrain);
+		}
 
 		points_data[current_state.map][coordinate].used = controls.input_used.checked;
 		var ordering = ['N', 'E', 'S', 'W'];
@@ -305,7 +325,7 @@ function initialize_map_data(map_name){
 
 	for (var row_nr = 0; row_nr < grid_size; row_nr+=1){
 		for (var column_nr = 0; column_nr < grid_size; column_nr+=1){
-			points_data[map_name][`${row_nr} ${column_nr}`] = {'used':false, 'borders':[false, false, false, false], 'input':'', 'general':'', 'scripts':'', 'images':''}
+			points_data[map_name][`${row_nr} ${column_nr}`] = {'used':false, 'borders':[false, false, false, false], 'input':'', 'general':'', 'scripts':'', 'images':'', 'terrains':new Set()};
 		}
 	}
 }
@@ -317,6 +337,8 @@ function create_data_dump(){
 	for (var point_coordinate in points){
 		var point = points_data[map_name][point_coordinate];
 		var presentation = points[point_coordinate];
+		var terrains = [...point.terrains];
+
 		to_save.points[point_coordinate] = {
 			'used': point.used,
 			'borders': point.borders,
@@ -324,8 +346,7 @@ function create_data_dump(){
 			'general': point.general??'',
 			'scripts': point.scripts??'',
 			'images': point.images??'',
-			'desert': point.desert?true:false,
-			'water': point.water?true:false
+			'terrains':[...point.terrains]
 		}
 	}
 	return to_save;
@@ -477,10 +498,10 @@ function create_grid(grid_size){
 				controls.shorthand_text.value = points_data[current_state.map][current_focus._signature].input;
 				controls.general_text.value = points_data[current_state.map][current_focus._signature].general;
 
-				if ('desert' in points_data[current_state.map][current_focus._signature]) controls.desert.checked = points_data[current_state.map][current_focus._signature].desert;
-				else desert.checked = false;
-				if ('water' in points_data[current_state.map][current_focus._signature]) controls.water.checked = points_data[current_state.map][current_focus._signature].water;
-				else water.checked = false;
+				for (var terrain in _local_terrains){
+					if (points_data[current_state.map][current_focus._signature]['terrains'].has(terrain)) controls['terrains'][terrain].checked = true;
+					else controls['terrains'][terrain].checked = false;
+				}
 
 				controls.input_used.checked = points_data[current_state.map][current_focus._signature].used;
 				var ordering = ['N', 'E', 'S', 'W'];
@@ -740,15 +761,13 @@ document.addEventListener('keydown', function(e){
 		subsequent_changes.push([Object.assign({}, current_state), []]);
 	}
 
-	if (e.key == 'd'){
-		points_data[current_state.map][current_state.marked._signature].desert = !points_data[current_state.map][current_state.marked._signature].desert;
-		proper_background(points_data[current_state.map][current_state.marked._signature], current_state.marked._signature);
-		changer();
-	}
-	if (e.key == 'w'){
-		points_data[current_state.map][current_state.marked._signature].water = !points_data[current_state.map][current_state.marked._signature].water;
-		proper_background(points_data[current_state.map][current_state.marked._signature], current_state.marked._signature);
-		changer();
+	for (var terrain in _local_terrains){
+		if (e.key == _local_terrains[terrain]['button']){
+			if (points_data[current_state.map][current_state.marked._signature]['terrains'].has(terrain)) points_data[current_state.map][current_state.marked._signature]['terrains'].delete(terrain);
+			else points_data[current_state.map][current_state.marked._signature]['terrains'].add(terrain);
+			proper_background(points_data[current_state.map][current_state.marked._signature], current_state.marked._signature);
+			changer();
+		}
 	}
 
 	if (e.key == 'ArrowLeft' || e.key == 'ArrowRight'){
@@ -810,6 +829,19 @@ document.getElementById('saver').onclick = function(){
 	document.body.removeChild(_a);
 };
 
+//TODO: old version files: change everything... somehow
+function terrainer(points_data){
+	for (var signature in points_data){
+		if (!('terrains' in points_data[signature])){
+			points_data[signature]['terrains'] = new Set();
+			if ('desert' in points_data[signature] && points_data[signature]['desert']) points_data[signature]['terrains'].add('desert')
+			if ('water' in points_data[signature] && points_data[signature]['water']) points_data[signature]['terrains'].add('water')
+		}
+		else points_data[signature]['terrains'] = new Set(points_data[signature]['terrains']);
+	}
+	return points_data;
+}
+
 const file_input = document.getElementById('loader');
 file_input.onchange = () => {
 	var all_selected = file_input.files;
@@ -829,7 +861,7 @@ file_input.onchange = () => {
 			if ('map general' in full_data) general_data[map_name]['map general'] = full_data['map general'];
 			else general_data[map_name]['map general'] = '';
 
-			points_data[map_name] = full_data['points']
+			points_data[map_name] = terrainer(full_data['points']);
 
 			if (map_name in map_element_overlays) dechanger(map_name);
 			else{
