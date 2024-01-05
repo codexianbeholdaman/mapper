@@ -1,4 +1,15 @@
 var TERRAINS = {
+	'MM1':{
+		'water':{
+			'color':'#99FFFF',
+			'button':'w'
+		},
+		'desert':{
+			'color':'#FFD481',
+			'button':'d'
+		},
+	},
+
 	'MM2':{
 		'water':{
 			'color':'#99FFFF',
