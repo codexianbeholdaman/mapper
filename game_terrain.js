@@ -11,6 +11,14 @@ var TERRAINS = {
 		'ice':{
 			'color':'#B3FFCC',
 			'button':'i'
+		},
+		'bog':{
+			'color':'#CC99FF',
+			'button':'b'
+		},
+		'mountains':{
+			'color':'#CFCFCF',
+			'button':'m'
 		}
 	}
 }

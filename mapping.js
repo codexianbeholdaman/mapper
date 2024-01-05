@@ -29,11 +29,11 @@ function checkboxes_terrains(){
 		_input.id = terrain;
 
 		var _label = document.createElement('label');
+		_label.innerHTML = terrain[0].toUpperCase() + terrain.slice(1);
 		_label.appendChild(_input);
-		_label.innerHTML += terrain[0].toUpperCase() + terrain.slice(1);
 
 		terrains_div.appendChild(_label);
-		controls.terrains[terrain] = _input;
+		controls['terrains'][terrain] = _input;
 	}
 }
 checkboxes_terrains();
@@ -208,6 +208,7 @@ function save_focus(map_switch=false){
 
 		for (var terrain in _local_terrains){
 			if (controls['terrains'][terrain].checked) points_data[current_state.map][coordinate]['terrains'].add(terrain);
+			else points_data[current_state.map][coordinate]['terrains'].delete(terrain);
 		}
 
 		points_data[current_state.map][coordinate].used = controls.input_used.checked;
@@ -763,7 +764,9 @@ document.addEventListener('keydown', function(e){
 
 	for (var terrain in _local_terrains){
 		if (e.key == _local_terrains[terrain]['button']){
-			if (points_data[current_state.map][current_state.marked._signature]['terrains'].has(terrain)) points_data[current_state.map][current_state.marked._signature]['terrains'].delete(terrain);
+			console.log(controls['terrains'][terrain]);
+			if (points_data[current_state.map][current_state.marked._signature]['terrains'].has(terrain)) 
+				points_data[current_state.map][current_state.marked._signature]['terrains'].delete(terrain);
 			else points_data[current_state.map][current_state.marked._signature]['terrains'].add(terrain);
 			proper_background(points_data[current_state.map][current_state.marked._signature], current_state.marked._signature);
 			changer();

@@ -13,7 +13,10 @@ keys_mapping = {
         keyboard.KeyCode.from_char('-'): 'j',
         keyboard.KeyCode.from_char('+'): 't',
         keyboard.KeyCode.from_char('/'): 'd',
-        keyboard.KeyCode.from_char('*'): 'w'
+        keyboard.KeyCode.from_char('*'): 'w',
+        keyboard.KeyCode.from_char('.'): 'i',
+        keyboard.KeyCode.from_char(','): 'b',
+        keyboard.KeyCode.from_char('\''): 'm'
 }
 
 dead = False
