@@ -15,7 +15,7 @@ In order to give a description (or script it, or manually give a border to it) t
 In order to disallow making changes to the map by a pointer, use the *ground truth mode*.  
 A 'fly' signature can be defined in order to place a pointer on a given map. After defining a 'fly' value, clicking on the *F* button by the map name results in being transported to a given signature without changing direction.  
 To change the grid size, change the *GRID_SIZE* variable in the *mapping.js* file.  
-*Order* button allows to order maps according to:
+The *Order* button allows to order maps according to:
 - The 'Order' parameter defined for a map, sorted lexicographically.
 - The map name, sorted lexicographically
 
@@ -25,8 +25,7 @@ For example, if there are four maps:
 - name:c, order:*undefined*
 - name:d, order:*undefined*
 
-Then the order after clicking button *Order* will be c,d,b,a
-
+Then the order of maps after clicking the button *Order* will be c,d,b,a
 
 Possible scripts:  
 &nbsp;&nbsp;*signature* refers to 'y x' coordinates of a field,  
@@ -67,6 +66,6 @@ The "Auto" part consists of a single file - *listener.py* ; all it does is:
 The file uses *xdotool* for sending keys - so, if you don't have a system allowing you to use xdotool (such as Windows), you'll have to tinker (probably with autohotkey).
 
 # Config
-Right now *config.js* file allows to specify the following options:
-1. The mouse button allowing to access the data of a point (a field) on a map: either middle mouse button (auxclick) or right mouse click (contextmenu)
-2. The game, terrains for which are utilized; terrains can be defined in a file *game_terrains.js* - by specifying the color of a field, and a button, pressing which leads to switching a given terrain of a field. 
+Right now, the *config.js* file allows one to specify the following options:
+1. The mouse button allowing access to the data of a point (a field) on a map: either the middle mouse button (auxclick) or the right mouse click (contextmenu)
+2. The game, terrains for which are utilized; terrains can be defined in the file *game_terrains.js* - by specifying the color of a field and a button, pressing which leads to switching a given terrain of a field.
