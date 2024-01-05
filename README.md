@@ -16,14 +16,16 @@ In order to disallow making changes to the map by a pointer, use the *ground tru
 A 'fly' signature can be defined in order to place a pointer on a given map. After defining a 'fly' value, clicking on the *F* button by the map name results in being transported to a given signature without changing direction.  
 To change the grid size, change the *GRID_SIZE* variable in the *mapping.js* file.  
 *Order* button allows to order maps according to:
- a) The 'Order' parameter defined for a map, sorted lexicographically.
- b) The map name, sorted lexicographically
+- The 'Order' parameter defined for a map, sorted lexicographically.
+- The map name, sorted lexicographically
+
 For example, if there are four maps:
-name:a, order:1 5
-name:b, order:1 4
-name:c, order:*undefined*
-name:d, order:*undefined*
-Then the order after clicking button *Order* will be d,c,b,a
+- name:a, order:1 5
+- name:b, order:1 4
+- name:c, order:*undefined*
+- name:d, order:*undefined*
+
+Then the order after clicking button *Order* will be c,d,b,a
 
 
 Possible scripts:  
