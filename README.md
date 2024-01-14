@@ -2,7 +2,7 @@ Automapper for Might & Magic 1
 
 # Overview
 To run the mapper:
-1. Run *map.html* (probably in a browser).
+1. Run *index.html* (probably in a browser).
 2. Run *listener.py* (perhaps after tinkering with it, depending on the operating system).
 
 # The mapper part
