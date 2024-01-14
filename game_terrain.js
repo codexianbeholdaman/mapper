@@ -30,6 +30,11 @@ var TERRAINS = {
 		'mountains':{
 			'color':'#CFCFCF',
 			'button':'m'
+		},
+		'forest':{
+			'color':'#66FF66',
+			'button':'f'
+
 		}
 	}
 }

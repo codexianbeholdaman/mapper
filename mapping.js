@@ -637,8 +637,9 @@ function process_move_forward(e_key){
 		for (var script of partial_scripts){
 			var proper_script = script.split(';');
 			if (proper_script[0] == 'W' && proper_script[1] == dir_to_cardinal[direction_proper]){
+				var next_map = (proper_script[2]=='_S') ? current_state.map : proper_script[2];
 				var old_direction = current_state.direction;
-				enforce_new_state({'map':proper_script[2], 'signature':proper_script[3], 'direction':old_direction});
+				enforce_new_state({'map':next_map, 'signature':proper_script[3], 'direction':old_direction});
 				return [];
 			}
 
