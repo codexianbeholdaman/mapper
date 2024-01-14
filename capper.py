@@ -8,12 +8,14 @@ args = parser.parse_args()
 
 CAPS_FOLDER = f'{os.environ["HOME"]}/.dosbox/capture'
 PREFIX = 'mm2_'
-DESTINATION = './map_data/caps/MM2/'
+
+PROPER_PREFIX = 'map_data'
+DESTINATION = './caps/MM2/'
 
 all_files = os.listdir(CAPS_FOLDER)
 all_prefixed = sorted([x for x in all_files if x[0:len(PREFIX)] == PREFIX], key=lambda x: int(x.split('.')[0][len(PREFIX):]))
 for _index in range(-int(args.amount), 0):
     last_prefixed = all_prefixed[_index]
-    shutil.copy(os.path.join(CAPS_FOLDER, last_prefixed), DESTINATION)
+    shutil.copy(os.path.join(CAPS_FOLDER, last_prefixed), os.path.join(PROPER_PREFIX, DESTINATION))
     proper_path = os.path.join(DESTINATION, last_prefixed)
     print(proper_path)
