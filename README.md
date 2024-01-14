@@ -69,3 +69,4 @@ The file uses *xdotool* for sending keys - so, if you don't have a system allowi
 Right now, the *config.js* file allows one to specify the following options:
 1. The mouse button allowing access to the data of a point (a field) on a map: either the middle mouse button (auxclick) or the right mouse click (contextmenu)
 2. The game, terrains for which are utilized; terrains can be defined in the file *game_terrains.js* - by specifying the color of a field and a button, pressing which leads to switching a given terrain of a field.
+3. The prefix for finding images, as explained in the file itself.
