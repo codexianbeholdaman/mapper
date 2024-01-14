@@ -512,7 +512,7 @@ function create_grid(grid_size){
 				for (var image of points_data[current_state.map][current_focus._signature].images.split('\n')){
 					if (image){
 						var pic = document.createElement('img');
-						pic.src = image;
+						pic.src = _CONFIG_PREFIX + image;
 						pic.alt = "image should be here";
 						pic.width = "600";
 						point_images.appendChild(pic);
