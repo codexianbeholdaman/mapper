@@ -70,3 +70,16 @@ Right now, the *config.js* file allows one to specify the following options:
 1. The mouse button allowing access to the data of a point (a field) on a map: either the middle mouse button (auxclick) or the right mouse click (contextmenu)
 2. The game, terrains for which are utilized; terrains can be defined in the file *game_terrains.js* - by specifying the color of a field and a button, pressing which leads to switching a given terrain of a field.
 3. The prefix for finding images, as explained in the file itself.
+
+# Dependencies
+In order to use the auto part of automapper, one needs:
+1. Linux distribution, and, if you don't want to tinker, one with Xorg:  
+   https://en.wikipedia.org/wiki/X.Org_Server
+2. Python installed: on any linux distribution it should be already present.
+3. xdotool installed: details about installation depending on distribution are located here: https://github.com/jordansissel/xdotool#installation  
+   If you have Wayland rather than Xorg, you will have to manually change references to xdotool within *listener.py* to one of these:  
+   https://github.com/jordansissel/xdotool#wayland
+5. pynput library: it can be installed by typing in the terminal:
+   ```bash
+   pip install pynput
+   ```
