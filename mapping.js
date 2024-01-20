@@ -1,5 +1,10 @@
-var GRID_SIZE = 16;
-var _local_terrains = TERRAINS[_CONFIG_GAME];
+var GRID_SIZE = [_CONFIG_MAX_MAP_SIZE, _CONFIG_MAX_MAP_SIZE];
+var _local_terrains = GAME_DATA[_CONFIG_GAME]['terrains'];
+
+var _local_grid_default;
+if ('default map size' in GAME_DATA[_CONFIG_GAME]) _local_grid_default = GAME_DATA[_CONFIG_GAME]['default map size'];
+else _local_grid_default = GRID_SIZE;
+
 
 var controls = {
 	'general_text': document.getElementById('general_text'),
@@ -17,6 +22,7 @@ var controls = {
 	'input_used': document.getElementById("usable"),
 	'input_borders': ["North", "East", "South", "West"].map((direction) => document.getElementById(`${direction}_border`)),
 	'order': document.getElementById('order'),
+	'map_size': document.getElementById('map_size'),
 	'orderer': document.getElementById('orderer')
 }
 
@@ -79,12 +85,17 @@ var current_state = {
 	'map':'_unknown'
 }
 current_focus = null;
+presentation = {};
 
 var points_data = {};
 var general_data = {};
 var is_map_changed = {};
 points_data[current_state.map] = {};
 general_data[current_state.map] = {};
+
+function create_basic_point(){
+	return {'used':false, 'borders':[false, false, false, false], 'input':'', 'general':'', 'scripts':'', 'images':'', 'terrains':new Set()};
+}
 
 function update_presentation(current_state){
 	if (!current_state['marked']) return;
@@ -224,18 +235,48 @@ function save_focus(map_switch=false){
 	}
 }
 
+
+//TODO: Can be sped up
+function redefine_map_size(map_data, new_map_size, old_map_size){
+	var new_x = new_map_size[1], new_y = new_map_size[0];
+	var old_x = old_map_size[1], old_y = old_map_size[0];
+
+	var max_x = Math.max(new_x, old_x);
+	var max_y = Math.max(new_y, old_y);
+
+	var min_x = Math.min(new_x, old_x);
+	var min_y = Math.min(new_y, old_y);
+
+	for (var y=0; y<max_y; y++){
+		for (var x=0; x<max_x; x++){
+			if (y<min_y && x<min_x) continue;
+			if (x<new_x && y<new_y) map_data[`${y} ${x}`] = create_basic_point();
+			else if (x<old_x && y<old_y) delete map_data[`${y} ${x}`];
+		}
+	}
+}
+
 function save_map_data(){
 	save_focus(true);
 	general_data[current_state.map]['order'] = controls.order.value
 	general_data[current_state.map]['ground truth'] = controls.ground_truth.checked;
 	general_data[current_state.map]['fly'] = controls.fly.value;
+	var old_map_size = general_data[current_state.map]['map size'];
+	general_data[current_state.map]['map size'] = controls.map_size.value.split(',').map((x) => Number(x));
+
+	if (old_map_size && (old_map_size[0] != general_data[current_state.map]['map size'][0] || old_map_size[1] != general_data[current_state.map]['map size'][1]) && current_state.map != '_unknown')
+		redefine_map_size(points_data[current_state.map], general_data[current_state.map]['map size'], old_map_size);
+
 	general_data[current_state.map]['map general'] = controls.map_general.value;
 }
 
 function load_map_presentation(to_load, map_name){
 	current_state['map'] = map_name;
+	resize_grid(general_data[map_name]['map size']);
+
 	controls.ground_truth.checked = general_data[map_name]['ground truth'];
 	controls.fly.value = general_data[map_name]['fly'];
+	controls.map_size.value = general_data[map_name]['map size'];
 
 	if ('map general' in general_data[map_name]) controls.map_general.value = general_data[map_name]['map general'];
 	else controls.map_general.value = '';
@@ -320,24 +361,36 @@ function create_new_map_overlay(map_name){
 	return map_overlay;
 }
 
-function initialize_map_data(map_name){
+function initialize_map_data(map_name, grid_size){
 	points_data[map_name] = {};
-	grid_size = GRID_SIZE;
 
-	for (var row_nr = 0; row_nr < grid_size; row_nr+=1){
-		for (var column_nr = 0; column_nr < grid_size; column_nr+=1){
-			points_data[map_name][`${row_nr} ${column_nr}`] = {'used':false, 'borders':[false, false, false, false], 'input':'', 'general':'', 'scripts':'', 'images':'', 'terrains':new Set()};
+	for (var row_nr = 0; row_nr < grid_size[0]; row_nr+=1){
+		for (var column_nr = 0; column_nr < grid_size[1]; column_nr+=1){
+			points_data[map_name][`${row_nr} ${column_nr}`] = create_basic_point();
 		}
 	}
 }
 
+function get_map_size(points){
+	all_points = Object.keys(points).map((x) => (x.split(' ').map((y) => Number(y))));
+
+	var max_x = 0, max_y = 0;
+	for (var coordinates of all_points){
+		if (coordinates[0] > max_y) max_y = coordinates[0];
+		if (coordinates[1] > max_x) max_x = coordinates[1];
+	}
+	return [max_y+1, max_x+1];
+}
+
 function create_data_dump(){
 	var map_name = current_state['map'];
-	to_save = {'title':map_name, 'ground truth':controls.ground_truth.checked, 'fly':controls.fly.value, 'map general':controls.map_general.value, 'order':controls.order.value, 'points':{}};
+	save_map_data();
+	var save_data = general_data[map_name];
 
-	for (var point_coordinate in points){
+	to_save = {'title':map_name, 'ground truth':save_data['ground truth'], 'fly':save_data['fly'], 'map size':save_data['map size'], 'map general':save_data['map general'], 'order':save_data['order'], 'points':{}};
+
+	for (var point_coordinate in points_data[map_name]){
 		var point = points_data[map_name][point_coordinate];
-		var presentation = points[point_coordinate];
 		var terrains = [...point.terrains];
 
 		to_save.points[point_coordinate] = {
@@ -351,6 +404,26 @@ function create_data_dump(){
 		}
 	}
 	return to_save;
+}
+
+function resize_grid(new_size){
+	size_y = new_size[0];
+	size_x = new_size[1];
+
+	for (var y=0; y<GRID_SIZE[0]; y++){
+		if (y<size_y) presentation['row_labels'][y].style.display = 'inline-block';
+		else presentation['row_labels'][y].style.display = 'none';
+
+		for (var x=0; x<GRID_SIZE[1]; x++){
+			if (x<size_x && y<size_y) points[`${y} ${x}`].style.display = 'inline-block';
+			else points[`${y} ${x}`].style.display = 'none';
+		}
+	}
+
+	for (var x=0; x<GRID_SIZE[1]; x++){
+		if (x<size_x) presentation['column_labels'][x].style.display = 'inline-block';
+		else presentation['column_labels'][x].style.display = 'none';
+	}
 }
 
 function create_grid(grid_size){
@@ -368,18 +441,21 @@ function create_grid(grid_size){
 	point_of_entry.innerHTML = 'y\\x'
 	row_with_labels.appendChild(point_of_entry);
 
-	for (var column_nr=0; column_nr<grid_size; column_nr+=1){
+	presentation['column_labels'] = {};
+	for (var column_nr=0; column_nr<grid_size[1]; column_nr+=1){
 		var column_label = document.createElement('div');
 		column_label.innerHTML = `${column_nr}`;
 		assign_style_to_element(column_label, standard_style);
 		column_label.style['backgroundColor'] = wonder_golden;
 		column_label.style['height'] = '50px';
 		column_label.style['lineHeight'] = '50px';
+		presentation['column_labels'][column_nr] = column_label;
 		row_with_labels.appendChild(column_label);
 	}
 	basis.appendChild(row_with_labels);
 
-	for (var row_nr=grid_size-1; row_nr>=0; row_nr-=1){
+	presentation['row_labels'] = {};
+	for (var row_nr=grid_size[0]-1; row_nr>=0; row_nr-=1){
 		var row = document.createElement('div');
 		basis.appendChild(row);
 
@@ -388,10 +464,10 @@ function create_grid(grid_size){
 		row_label.style['backgroundColor'] = wonder_golden;
 		row_label.style['width'] = '50px';
 		row_label.innerHTML = `${row_nr}`;
-
+		presentation['row_labels'][row_nr] = row_label;
 		row.appendChild(row_label);
 
-		for (var column_nr=0; column_nr<grid_size; column_nr+=1){
+		for (var column_nr=0; column_nr<grid_size[1]; column_nr+=1){
 			var point = document.createElement('div');
 
 			var input_part = document.createElement('div');
@@ -564,6 +640,7 @@ function create_map_adder(){
 		general_data[map_name] = {};
 		general_data[map_name]['ground truth'] = false;
 		general_data[map_name]['fly'] = "";
+		general_data[map_name]['map size'] = [_local_grid_default[0], _local_grid_default[1]]; //TODO: Defaulting
 		general_data[map_name]['order'] = "";
 		is_map_changed[map_name] = false;
 
@@ -572,7 +649,7 @@ function create_map_adder(){
 
 		controls.maps_list.appendChild(map_overlay);
 
-		initialize_map_data(map_name);
+		initialize_map_data(map_name, _local_grid_default);
 		change_map(map_name);
 	};
 	controls.maps_adder.appendChild(map_adder);
@@ -581,7 +658,7 @@ function create_map_adder(){
 var points = create_grid(GRID_SIZE);
 create_map_adder();
 var subsequent_changes = [];
-initialize_map_data('_unknown');
+initialize_map_data('_unknown', GRID_SIZE);
 controls.orderer.onclick = function(){
 	if (current_state.map != '_unknown')
 		map_element_overlays[current_state.map]._element.style.backgroundColor = '#880000';
@@ -682,7 +759,7 @@ function process_move_forward(e_key){
 	var new_place_presentation = points[new_place_signature];
 	var new_place_data = points_data[current_state.map][new_place_signature];
 
-	if (new_place_presentation && (!ground_truth.checked || (new_place_data.used && points_data[current_state.map][current_state.marked._signature].borders[direction_proper]))){
+	if (new_place_data && (!ground_truth.checked || (new_place_data.used && points_data[current_state.map][current_state.marked._signature].borders[direction_proper]))){
 		if (!ground_truth.checked){
 			if (!new_place_data.used){
 				new_place_data.used = true;
@@ -765,7 +842,6 @@ document.addEventListener('keydown', function(e){
 
 	for (var terrain in _local_terrains){
 		if (e.key == _local_terrains[terrain]['button']){
-			console.log(controls['terrains'][terrain]);
 			if (points_data[current_state.map][current_state.marked._signature]['terrains'].has(terrain)) 
 				points_data[current_state.map][current_state.marked._signature]['terrains'].delete(terrain);
 			else points_data[current_state.map][current_state.marked._signature]['terrains'].add(terrain);
@@ -866,6 +942,8 @@ file_input.onchange = () => {
 			else general_data[map_name]['map general'] = '';
 
 			points_data[map_name] = terrainer(full_data['points']);
+			if ('map size' in full_data) general_data[map_name]['map size'] = full_data['map size'];
+			else general_data[map_name]['map size'] = get_map_size(points_data[map_name]);
 
 			if (map_name in map_element_overlays) dechanger(map_name);
 			else{

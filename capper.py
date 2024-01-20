@@ -7,10 +7,10 @@ parser.add_argument('amount', nargs='?', default='1')
 args = parser.parse_args()
 
 CAPS_FOLDER = f'{os.environ["HOME"]}/.dosbox/capture'
-PREFIX = 'mm2_'
+PREFIX = 'xeen_'
 
 PROPER_PREFIX = 'map_data'
-DESTINATION = './caps/MM2/'
+DESTINATION = './caps/MMXeen/'
 
 all_files = os.listdir(CAPS_FOLDER)
 all_prefixed = sorted([x for x in all_files if x[0:len(PREFIX)] == PREFIX], key=lambda x: int(x.split('.')[0][len(PREFIX):]))
