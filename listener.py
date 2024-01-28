@@ -17,7 +17,10 @@ keys_mapping = {
         keyboard.KeyCode.from_char('.'): 'i',
         keyboard.KeyCode.from_char(','): 'b',
         keyboard.KeyCode.from_char('['): 'm',
-        keyboard.KeyCode.from_char(']'): 'f'
+        keyboard.KeyCode.from_char(']'): 'f',
+        keyboard.KeyCode.from_char('='): 'l',
+        keyboard.KeyCode.from_char('\''): 'q',
+        keyboard.KeyCode.from_char('\\'): 'c',
 }
 
 dead = False

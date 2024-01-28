@@ -45,6 +45,30 @@ var GAME_DATA = {
 
 	'MMXeen':{
 		'terrains':{
+			'water':{
+				'color':'#99FFFF',
+				'button':'w'
+			},
+			'mountains':{
+				'color':'#CFCFCF',
+				'button':'m'
+			},
+			'forest':{
+				'color':'#66FF66',
+				'button':'f'
+			},
+			'lava':{
+				'color':'#FF6A4D',
+				'button':'l'
+			},
+			'deep_water':{
+				'color':'#8080FF',
+				'button':'q'
+			},
+			'clouds':{
+				'color':'#FFB3FF',
+				'button':'c'
+			}
 		},
 		'default map size':[16, 16]
 	}
