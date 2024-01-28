@@ -14,7 +14,7 @@ In order to move back (possibly overriding the last changes made by a pointer), 
 In order to give a description (or script it, or manually give a border to it) to a field, click on it using a middle mouse button.  
 In order to disallow making changes to the map by a pointer, use the *ground truth mode*.  
 A 'fly' signature can be defined in order to place a pointer on a given map. After defining a 'fly' value, clicking on the *F* button by the map name results in being transported to a given signature without changing direction.  
-To change the grid size, change the *GRID_SIZE* variable in the *mapping.js* file.  
+To change the grid size, change the *map_size* parameter. It can be changed dynamically, and, as expected, it can result in a loss of data (so it might be preferred to save before changing the map size).  
 The *Order* button allows to order maps according to:
 - The 'Order' parameter defined for a map, sorted lexicographically.
 - The map name, sorted lexicographically
@@ -53,6 +53,11 @@ Possible scripts:
 &nbsp;&nbsp;For example,  
 &nbsp;&nbsp;&nbsp;R;S  
 &nbsp;&nbsp;Changes direction of a pointer from *S* to *N* after pressing *y*.
+
+Setting the *signature* to _P is equivalent to setting the signature to a current field. For example,  
+&nbsp;P;N;X;_P  
+On a field with signature '7 11' is equivalent to:  
+&nbsp;P;N;X;7 11
 
 Other controls:  
 &nbsp;t - switch ground truth mode.  
