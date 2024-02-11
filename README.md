@@ -27,11 +27,13 @@ For example, if there are four maps:
 
 Then the order of maps after clicking the button *Order* will be c,d,b,a
 
-## Possible scripts:  
+## Scripts:
+Scripts allow to programatically move a pointer to a different map and/or a different field, possibly changing its direction. Fields can contain multiple scripts, each separated by a newline. While describing scripts, following definitions were frequently used:  
 &nbsp;&nbsp;*signature* refers to 'y x' coordinates of a field,  
 &nbsp;&nbsp;*direction* refers to the direction of a pointer - either N,W,E or S (north, west, east or south).  
 &nbsp;&nbsp;*new_direction* refers to the new direction of a pointer - either N,W,E,S or R. By default (if not specified), it is equal to *direction*. R specifies reversing the pointer - for example, if the direction is 'N', then the *new_direction* equal to 'R' is equivalent to 'S'.  
 
+The following types of scripts can be defined:  
 &nbsp;T;*map_name*;*signature*[;new_direction]  
 &nbsp;&nbsp;Moving on the field results in being teleported to another field defined by *signature* on the map *map_name* facing the *new_direction*.  
 &nbsp;&nbsp;For example,  
