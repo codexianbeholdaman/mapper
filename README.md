@@ -27,7 +27,7 @@ For example, if there are four maps:
 
 Then the order of maps after clicking the button *Order* will be c,d,b,a
 
-## Scripts:
+## Scripts
 Scripts allow to programatically move a pointer to a different map and/or a different field, possibly changing its direction. Fields can contain multiple scripts, each separated by a newline. While describing scripts, following definitions were frequently used:  
 &nbsp;&nbsp;*signature* refers to 'y x' coordinates of a field,  
 &nbsp;&nbsp;*direction* refers to the direction of a pointer - either N,W,E or S (north, west, east or south).  
@@ -92,7 +92,7 @@ The order of directions is immaterial.
 
 
 
-Other controls:  
+## Other controls:  
 &nbsp;t - switch ground truth mode.  
 &nbsp;backspace - undo last movement.  
 &nbsp;j - jump (not implemented as in the game - always 2 steps forward, just a convenience)  
