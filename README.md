@@ -1,4 +1,4 @@
-Automapper for Might & Magic 1
+Automapper for Might & Magic 1, 2, and World of Xeen
 
 # Overview
 To run the mapper:
@@ -27,20 +27,25 @@ For example, if there are four maps:
 
 Then the order of maps after clicking the button *Order* will be c,d,b,a
 
-Possible scripts:  
+## Possible scripts:  
 &nbsp;&nbsp;*signature* refers to 'y x' coordinates of a field,  
-&nbsp;&nbsp;*direction* refers to the direction of a pointer - either N,W,E or S  
-&nbsp;T;*map_name*;*signature*  
-&nbsp;&nbsp;Moving on the field results in being teleported to another field defined by *signature* on the map *map_name*.  
+&nbsp;&nbsp;*direction* refers to the direction of a pointer - either N,W,E or S (north, west, east or south).  
+&nbsp;&nbsp;*new_direction* refers to the new direction of a pointer - either N,W,E,S or R. By default (if not specified), it is equal to *direction*. R specifies reversing the pointer - for example, if the direction is 'N', then the *new_direction* equal to 'R' is equivalent to 'S'.  
+
+&nbsp;T;*map_name*;*signature*[;new_direction]  
+&nbsp;&nbsp;Moving on the field results in being teleported to another field defined by *signature* on the map *map_name* facing the *new_direction*.  
 &nbsp;&nbsp;For example,  
 &nbsp;&nbsp;&nbsp;T;B3;13 3  
-&nbsp;&nbsp;&nbsp;T;\_S; 7 0  
-&nbsp;&nbsp;*map_name* equal to *_S* refers to self.  
+&nbsp;&nbsp;Moving on a field with this script leads to a field with signature 13,3 on a map B3.
+
   
-&nbsp;P;*direction*;*map_name*;*signature*  
-&nbsp;&nbsp;Being on a given field and pressing *y* while the pointer is directed in a correct way results in transition to another field defined by *signature* on the map *map_name*.  
+&nbsp;P;*direction*;*map_name*;*signature*[;*new_direction*]  
+&nbsp;&nbsp;Being on a given field and pressing *y* while the pointer is directed in a correct way results in transition to another field defined by *signature* on the map *map_name* facing the *new_direction*.  
 &nbsp;&nbsp;For example,  
 &nbsp;&nbsp;&nbsp;P;N;B3;13 5  
+&nbsp;&nbsp;Clicking 'y' on a given field while facing north field leads to a map B3, signature 13,5, facing north. It is equivalent to:  
+&nbsp;&nbsp;&nbsp;P;N;B3;13 5;N  
+
   
 &nbsp;WS;*direction*  
 &nbsp;&nbsp;Being on a given field and moving in a given direction results in transition between maps in the overworld as in the game's system.  
@@ -48,16 +53,42 @@ Possible scripts:
 &nbsp;&nbsp;&nbsp;WS;N  
 &nbsp;&nbsp;On a map B3, signature 15,7 leads to a map B2, signature 0,7.  
   
-&nbsp;R;*direction*
+&nbsp;R;*direction*  
 &nbsp;&nbsp;Pressing *y* on a given field while pointer is directed in a *direction* reverses the pointer.  
 &nbsp;&nbsp;For example,  
 &nbsp;&nbsp;&nbsp;R;S  
 &nbsp;&nbsp;Changes direction of a pointer from *S* to *N* after pressing *y*.
 
+### Possible shortcuts:  
 Setting the *signature* to _P is equivalent to setting the signature to a current field. For example,  
 &nbsp;P;N;X;_P  
 On a field with signature '7 11' is equivalent to:  
 &nbsp;P;N;X;7 11
+
+
+Setting the *map_name* to \_S (self) is equivalent to setting the map name to a current map name. For example,  
+&nbsp;&nbsp;&nbsp;T;\_S;7 0  
+&nbsp;&nbsp;On a field on a map called 'XYZ' is equivalent to:  
+&nbsp;&nbsp;&nbsp;T;XYZ;7 0  
+
+Setting the *map_name* to \_UP or \_DOWN is equivalent to setting the map name to a current map name with the last number in a name replaced by a number higher or lower by one, respectively. For example,  
+&nbsp;&nbsp;&nbsp;P;N;\_DOWN;7 0  
+&nbsp;&nbsp;On a field on a map called 'XYZ 13' is equivalent to:  
+&nbsp;&nbsp;&nbsp;P;N;XYZ 12;7 0  
+While  
+&nbsp;&nbsp;&nbsp;P;N;\_UP;7 0  
+&nbsp;&nbsp;On a field on a map called 'XYZ 13' is equivalent to:  
+&nbsp;&nbsp;&nbsp;P;N;XYZ 14;7 0  
+
+One may specify multiple directions for a single script, written one by one: for example:
+&nbsp;&nbsp;&nbsp;P;NWE;XYZ;7 0  
+&nbsp;&nbsp;On a field on a map called 'XYZ' is equivalent to:  
+&nbsp;&nbsp;&nbsp;P;N;XYZ;7 0;N  
+&nbsp;&nbsp;&nbsp;P;E;XYZ;7 0;E  
+&nbsp;&nbsp;&nbsp;P;W;XYZ;7 0;W  
+The order of directions is immaterial.
+
+
 
 Other controls:  
 &nbsp;t - switch ground truth mode.  
