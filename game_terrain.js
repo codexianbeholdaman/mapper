@@ -1,74 +1,40 @@
+function create_terrain(color, button){
+	return {
+		'color':color,
+		'button':button
+	}
+}
+
 var GAME_DATA = {
 	'MM1':{
 		'terrains':{
-			'water':{
-				'color':'#99FFFF',
-				'button':'w'
-			},
-			'desert':{
-				'color':'#FFD481',
-				'button':'d'
-			},
+			'water':create_terrain('#99FFFF', 'w'),
+			'desert':create_terrain('#FFD481', 'd'),
 		},
 		'default map size':[16, 16]
 	},
 
 	'MM2':{
 		'terrains':{
-			'water':{
-				'color':'#99FFFF',
-				'button':'w'
-			},
-			'desert':{
-				'color':'#FFD481',
-				'button':'d'
-			},
-			'ice':{
-				'color':'#B3FFCC',
-				'button':'i'
-			},
-			'bog':{
-				'color':'#CC99FF',
-				'button':'b'
-			},
-			'mountains':{
-				'color':'#CFCFCF',
-				'button':'m'
-			},
-			'forest':{
-				'color':'#66FF66',
-				'button':'f'
-			}
+			'water':create_terrain('#99FFFF', 'w'),
+			'desert':create_terrain('#FFD481', 'd'),
+			'ice':create_terrain('#B3FFCC', 'i'),
+			'bog':create_terrain('#CC99FF', 'b'),
+			'mountains':create_terrain('#CFCFCF', 'm'),
+			'forest':create_terrain('#66FF66', 'f')
 		},
 		'default map size':[16, 16]
 	},
 
 	'MMXeen':{
 		'terrains':{
-			'water':{
-				'color':'#99FFFF',
-				'button':'w'
-			},
-			'mountains':{
-				'color':'#CFCFCF',
-				'button':'m'
-			},
-			'forest':{
-				'color':'#66FF66',
-				'button':'f'
-			},
-			'lava':{
-				'color':'#FF6A4D',
-				'button':'l'
-			},
-			'deep_water':{
-				'color':'#8080FF',
-				'button':'q'
-			},
-			'clouds':{
-				'color':'#FFB3FF',
-				'button':'c'
-			}
+			'water':create_terrain('#99FFFF', 'w'),
+			'mountains':create_terrain('#CFCFCF', 'm'),
+			'forest':create_terrain('#66FF66', 'f'),
+			'lava':create_terrain('#FF6A4D', 'l'),
+			'deep_water':create_terrain('#8080FF', 'q'),
+			'clouds':create_terrain('#FFB3FF', 'c'),
+			'desert':create_terrain('#FFD481', 'd'),
 		},
 		'default map size':[16, 16]
 	}

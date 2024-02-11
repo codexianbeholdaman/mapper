@@ -1,8 +1,9 @@
 import json
 
+prefix = 'Skyway '
 for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
     for digit in [1, 2, 3, 4]:
-        map_name = f'{letter}{digit}'
+        map_name = f'{prefix}{letter}{digit}'
         with open(f'map_data/maps/MMXeen/{map_name}.txt') as map_:
             proper_map = json.load(map_)
             points = proper_map['points']

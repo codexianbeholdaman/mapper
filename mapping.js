@@ -37,8 +37,9 @@ function checkboxes_terrains(){
 
 		var _label = document.createElement('label');
 		_label.innerHTML = terrain[0].toUpperCase() + terrain.slice(1);
-		_label.appendChild(_input);
+		_label.htmlFor = terrain;
 
+		terrains_div.appendChild(_input);
 		terrains_div.appendChild(_label);
 		controls['terrains'][terrain] = _input;
 	}
@@ -160,24 +161,24 @@ function update_field(signature){
 
 			var direction = proper_script[1];
 			var base_teleport = points[signature]._teleports;
-			if (direction == 'N' || proper_script[0] == 'T'){
+			if (direction.includes('N') || proper_script[0] == 'T'){
 				var mini_teleports = base_teleport._mini_teleports[cardinal_to_dir['N']];
 				mini_teleports._minors[0].style.background = `linear-gradient(to right bottom, rgba(0, 0, 0, 0) 50%, ${color} 50%)`;
 				mini_teleports._minors[1].style.background = `linear-gradient(to right top, ${color} 50%, rgba(0, 0, 0, 0) 50%)`;
 			}
 
-			if (direction == 'S' || proper_script[0] == 'T'){
+			if (direction.includes('S') || proper_script[0] == 'T'){
 				var mini_teleports = base_teleport._mini_teleports[cardinal_to_dir['S']];
 				mini_teleports._minors[0].style.background = `linear-gradient(to right top, rgba(0, 0, 0, 0) 50%, ${color} 50%)`;
 				mini_teleports._minors[1].style.background = `linear-gradient(to right bottom, ${color} 50%, rgba(0, 0, 0, 0) 50%)`;
 			}
 
-			if (direction == 'W' || proper_script[0] == 'T'){
+			if (direction.includes('W') || proper_script[0] == 'T'){
 				var mini_teleports = base_teleport._mini_teleports[cardinal_to_dir['W']];
 				mini_teleports._minors[0].style.background = `linear-gradient(to right bottom, rgba(0, 0, 0, 0) 50%, ${color} 50%)`;
 				mini_teleports._minors[1].style.background = `linear-gradient(to right top, rgba(0, 0, 0, 0) 50%, ${color} 50%)`;
 			}
-			if (direction == 'E' || proper_script[0] == 'T'){
+			if (direction.includes('E') || proper_script[0] == 'T'){
 				var mini_teleports = base_teleport._mini_teleports[cardinal_to_dir['E']];
 				mini_teleports._minors[0].style.background = `linear-gradient(to right top, ${color} 50%, rgba(0, 0, 0, 0) 50%)`;
 				mini_teleports._minors[1].style.background = `linear-gradient(to right bottom, ${color} 50%, rgba(0, 0, 0, 0) 50%)`;
@@ -735,15 +736,31 @@ function move_in_direction(signature, direction_int, moves=1){
 }
 
 function determine_next_map(map_name){
-	if (map_name == '_S') return current_state.map;
+	if (map_name[0] == '_'){
+		if (map_name == '_S') return current_state.map;
+		current_name_split = current_state.map.split(' ');
+		last = Number(current_name_split[current_name_split.length-1]);
+		if (map_name == '_UP') to_add = 1;
+		else to_add = -1;
+
+		current_name_split[current_name_split.length-1] = (last+to_add).toString();
+		console.log(current_name_split.join(' '));
+		return current_name_split.join(' ');
+	}
 	return map_name;
 }
 function determine_next_signature(signature){
 	if (signature == '_P') return current_state.marked._signature;
 	return signature;
 }
+function determine_next_direction(direction){
+	if (typeof direction == 'number') return direction;
+	if (direction == 'R') return (current_state.direction+2)%4;
+	return cardinal_to_dir[direction];
+
+}
 function create_next_state(map, signature, direction){
-	return {'map':determine_next_map(map), 'signature':determine_next_signature(signature), 'direction':direction}
+	return {'map':determine_next_map(map), 'signature':determine_next_signature(signature), 'direction':determine_next_direction(direction)};
 }
 
 
@@ -762,15 +779,17 @@ function process_move_forward(e_key){
 			var proper_script = script.split(';');
 			if (proper_script[0] == 'W' && proper_script[1] == dir_to_cardinal[direction_proper]){
 				var old_direction = current_state.direction;
-				enforce_new_state(create_next_state(proper_script[2], proper_script[3], old_direction));
+				enforce_new_state(create_next_state(proper_script[2], proper_script[3], proper_script[4]??old_direction));
 				return [];
 			}
 
 			if (proper_script[0] == 'WS' && proper_script[1] == dir_to_cardinal[direction_proper]){
 				var old_direction = current_state.direction;
+				var ln = current_state.map.length;
 
-				var map_column = current_state.map.charCodeAt(0);
-				var map_row = current_state.map.charCodeAt(1);
+				var map_column = current_state.map.charCodeAt(ln-2);
+				var map_row = current_state.map.charCodeAt(ln-1);
+				var start = current_state.map.substring(0, ln-2);
 
 				var coordinate_x = current_state.marked._coordinates['column'];
 				var coordinate_y = current_state.marked._coordinates['row'];
@@ -794,7 +813,7 @@ function process_move_forward(e_key){
 				}
 				map_row = String.fromCharCode(map_row);
 				map_column = String.fromCharCode(map_column);
-				enforce_new_state({'map':`${map_column}${map_row}`, 'signature':`${coordinate_y} ${coordinate_x}`, 'direction':old_direction});
+				enforce_new_state({'map':`${start}${map_column}${map_row}`, 'signature':`${coordinate_y} ${coordinate_x}`, 'direction':old_direction});
 
 				return [];
 			}
@@ -864,8 +883,8 @@ document.addEventListener('keydown', function(e){
 			for (var script of partial_scripts){
 				var proper_script = script.split(';');
 
-				if (proper_script[0] == 'P' && proper_script[1] == dir_to_cardinal[direction_int]){
-					enforce_new_state(create_next_state(proper_script[2], proper_script[3], current_state.direction));
+				if (proper_script[0] == 'P' && proper_script[1].includes(dir_to_cardinal[direction_int])){
+					enforce_new_state(create_next_state(proper_script[2], proper_script[3], proper_script[4]??current_state.direction));
 					subsequent_changes.push([Object.assign({}, current_state), []]);
 				}
 
