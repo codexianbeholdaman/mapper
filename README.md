@@ -80,7 +80,7 @@ While
 &nbsp;&nbsp;On a field on a map called 'XYZ 13' is equivalent to:  
 &nbsp;&nbsp;&nbsp;P;N;XYZ 14;7 0  
 
-One may specify multiple directions for a single script, written one by one: for example:
+One may specify multiple directions for a single script, written one by one: for example:  
 &nbsp;&nbsp;&nbsp;P;NWE;XYZ;7 0  
 &nbsp;&nbsp;On a field on a map called 'XYZ' is equivalent to:  
 &nbsp;&nbsp;&nbsp;P;N;XYZ;7 0;N  
