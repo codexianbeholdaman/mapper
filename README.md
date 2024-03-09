@@ -1,9 +1,25 @@
-Automapper for Might & Magic 1, 2, and World of Xeen
+Automapper for Might & Magic 1, 2, World of Xeen, and Pool of Radiance
 
 # Overview
 To run the mapper:
 1. Run *index.html* (probably in a browser).
 2. Run *listener.py* (perhaps after tinkering with it, depending on the operating system).
+
+# Quickstart
+1. Create a game entry in a GAME\_DATA object with looking like this:  
+```
+	'Game name':{
+		'terrains':{
+		},
+		'default map size':[16, 16],
+	}
+```  
+Where default map size denotes default size of a map (this is relevant only for new maps, you can change it later).
+2. In a config.js file, set variable `_CONFIG_GAME` to the same game name (like this):  
+```
+const _CONFIG_GAME = 'Game name';
+```
+3. Run *index.html* in a browser. Create a map by entering the name and clicking on a '+' button.
 
 # The mapper part
 In order to be able to save the map, you need to create it by giving it the name and clicking a '+' button.  
@@ -15,6 +31,7 @@ In order to give a description (or script it, or manually give a border to it) t
 In order to disallow making changes to the map by a pointer, use the *ground truth mode*.  
 A 'fly' signature can be defined in order to place a pointer on a given map. After defining a 'fly' value, clicking on the *F* button by the map name results in being transported to a given signature without changing direction.  
 To change the grid size, change the *map_size* parameter. It can be changed dynamically, and, as expected, it can result in a loss of data (so it might be preferred to save before changing the map size).  
+A movement model can be changed between *overhead* (using *left arrow* moves characters to the left) or *blobber* (using *left arrow* changes the direction characters face).
 The *Order* button allows to order maps according to:
 - The 'Order' parameter defined for a map, sorted lexicographically.
 - The map name, sorted lexicographically
@@ -103,12 +120,19 @@ The "Auto" part consists of a single file - *listener.py* ; all it does is:
 2. Sending a value for a given key (the one on the right side of the *keys_mapping* dictionary) to a Mozilla process.
 The file uses *xdotool* for sending keys - so, if you don't have a system allowing you to use xdotool (such as Windows), you'll have to tinker (probably with autohotkey).
 
-# Config
+# General config
 Right now, the *config.js* file allows one to specify the following options:
 1. The mouse button allowing access to the data of a point (a field) on a map: either the middle mouse button (auxclick) or the right mouse click (contextmenu)
-2. The game, terrains for which are utilized; terrains can be defined in the file *game_terrains.js* - by specifying the color of a field and a button, pressing which leads to switching a given terrain of a field.
+2. The game, configuration for which is utilized; 
 3. The prefix for finding images, as explained in the file itself.
 4. The maximal map size (both coordinates). The higher it is, the slower the initial loading time.
+
+# Game-specific config
+All configurations for a single game can be defined in the *game_terrains.js* file.
+1. *terrains*: Terrains can be defined by specifying the color of a field and a button, pressing which leads to switching a given terrain of a field.
+2. *default_map_size*: Default size of a map.
+3. *y_order*: The order of y-coordinates. If equal to 'ascending', then moving SOUTH is equivalent to moving towards a higher y coordinate (like in the Pool of Radiance). When omitted, it is treated as 'descending'.
+4. *backspace*: If not set, using *arrow down* moves the pointer one step backwards. If set to *revert*, pressing the *arrow down* button reverts the pointer. 
 
 # Dependencies
 In order to use the auto part of automapper, one needs:

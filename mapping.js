@@ -1,8 +1,17 @@
 var GRID_SIZE = [_CONFIG_MAX_MAP_SIZE, _CONFIG_MAX_MAP_SIZE];
-var _local_terrains = GAME_DATA[_CONFIG_GAME]['terrains'];
+var _game_config = GAME_DATA[_CONFIG_GAME];
+var _local_terrains = _game_config['terrains'];
+
+var ascending_y = false;
+var revert = false;
+if ('y_order' in _game_config && _game_config['y_order'] == 'ascending')
+	ascending_y = true;
+console.log(ascending_y);
+if ('backspace' in _game_config && _game_config['backspace'] == 'revert')
+	revert = true;
 
 var _local_grid_default;
-if ('default map size' in GAME_DATA[_CONFIG_GAME]) _local_grid_default = GAME_DATA[_CONFIG_GAME]['default map size'];
+if ('default map size' in _game_config) _local_grid_default = _game_config['default map size'];
 else _local_grid_default = GRID_SIZE;
 
 
@@ -24,7 +33,10 @@ var controls = {
 	'input_borders': ["North", "East", "South", "West"].map((direction) => document.getElementById(`${direction}_border`)),
 	'order': document.getElementById('order'),
 	'map_size': document.getElementById('map_size'),
-	'orderer': document.getElementById('orderer')
+	'orderer': document.getElementById('orderer'),
+
+	'blobber': document.getElementById('model_blobber'),
+	'overhead': document.getElementById('model_overhead')
 }
 
 function checkboxes_terrains(){
@@ -80,6 +92,12 @@ var cardinal_to_dir = {
 	'S':2,
 	'W':3
 }
+var arrow_to_dir = {
+	'ArrowUp':0,
+	'ArrowRight':1,
+	'ArrowDown':2,
+	'ArrowLeft':3
+};
 
 var current_state = {
 	'marked':null,
@@ -161,24 +179,24 @@ function update_field(signature){
 
 			var direction = proper_script[1];
 			var base_teleport = points[signature]._teleports;
-			if (direction.includes('N') || proper_script[0] == 'T'){
+			if ((direction && direction.includes('N')) || proper_script[0] == 'T'){
 				var mini_teleports = base_teleport._mini_teleports[cardinal_to_dir['N']];
 				mini_teleports._minors[0].style.background = `linear-gradient(to right bottom, rgba(0, 0, 0, 0) 50%, ${color} 50%)`;
 				mini_teleports._minors[1].style.background = `linear-gradient(to right top, ${color} 50%, rgba(0, 0, 0, 0) 50%)`;
 			}
 
-			if (direction.includes('S') || proper_script[0] == 'T'){
+			if ((direction && direction.includes('S')) || proper_script[0] == 'T'){
 				var mini_teleports = base_teleport._mini_teleports[cardinal_to_dir['S']];
 				mini_teleports._minors[0].style.background = `linear-gradient(to right top, rgba(0, 0, 0, 0) 50%, ${color} 50%)`;
 				mini_teleports._minors[1].style.background = `linear-gradient(to right bottom, ${color} 50%, rgba(0, 0, 0, 0) 50%)`;
 			}
 
-			if (direction.includes('W') || proper_script[0] == 'T'){
+			if ((direction && direction.includes('W')) || proper_script[0] == 'T'){
 				var mini_teleports = base_teleport._mini_teleports[cardinal_to_dir['W']];
 				mini_teleports._minors[0].style.background = `linear-gradient(to right bottom, rgba(0, 0, 0, 0) 50%, ${color} 50%)`;
 				mini_teleports._minors[1].style.background = `linear-gradient(to right top, rgba(0, 0, 0, 0) 50%, ${color} 50%)`;
 			}
-			if (direction.includes('E') || proper_script[0] == 'T'){
+			if ((direction && direction.includes('E')) || proper_script[0] == 'T'){
 				var mini_teleports = base_teleport._mini_teleports[cardinal_to_dir['E']];
 				mini_teleports._minors[0].style.background = `linear-gradient(to right top, ${color} 50%, rgba(0, 0, 0, 0) 50%)`;
 				mini_teleports._minors[1].style.background = `linear-gradient(to right bottom, ${color} 50%, rgba(0, 0, 0, 0) 50%)`;
@@ -279,6 +297,7 @@ function save_map_data(){
 	general_data[current_state.map]['ground truth'] = controls.ground_truth.checked;
 	general_data[current_state.map]['fly'] = controls.fly.value;
 	general_data[current_state.map]['teleport'] = controls.teleport.value;
+	general_data[current_state.map]['exploration_blobber'] = controls.blobber.checked;
 
 	var old_map_size = general_data[current_state.map]['map size'];
 	general_data[current_state.map]['map size'] = controls.map_size.value.split(',').map((x) => Number(x));
@@ -298,6 +317,8 @@ function load_map_presentation(to_load, map_name){
 	controls.teleport.value = general_data[map_name]['teleport']??'';
 
 	controls.map_size.value = general_data[map_name]['map size'];
+	controls.blobber.checked = general_data[map_name]['exploration_blobber'];
+	controls.overhead.checked = !general_data[map_name]['exploration_blobber'];
 
 	if ('map general' in general_data[map_name]) controls.map_general.value = general_data[map_name]['map general'];
 	else controls.map_general.value = '';
@@ -421,7 +442,7 @@ function create_data_dump(){
 	save_map_data();
 	var save_data = general_data[map_name];
 
-	to_save = {'title':map_name, 'ground truth':save_data['ground truth'], 'fly':save_data['fly'], 'teleport':save_data['teleport'], 'map size':save_data['map size'], 'map general':save_data['map general'], 'order':save_data['order'], 'points':{}};
+	to_save = {'title':map_name, 'ground truth':save_data['ground truth'], 'fly':save_data['fly'], 'exploration_blobber':save_data['exploration_blobber'], 'teleport':save_data['teleport'], 'map size':save_data['map size'], 'map general':save_data['map general'], 'order':save_data['order'], 'points':{}};
 
 	for (var point_coordinate in points_data[map_name]){
 		var point = points_data[map_name][point_coordinate];
@@ -489,7 +510,14 @@ function create_grid(grid_size){
 	basis.appendChild(row_with_labels);
 
 	presentation['row_labels'] = {};
-	for (var row_nr=grid_size[0]-1; row_nr>=0; row_nr-=1){
+	var row_start=grid_size[0]-1, row_end=-1, row_diff = -1;
+	if (ascending_y){
+		row_start = 0;
+		row_end = grid_size[0];
+		row_diff = 1;
+	}
+
+	for (var row_nr=row_start; row_nr != row_end; row_nr += row_diff){
 		var row = document.createElement('div');
 		basis.appendChild(row);
 
@@ -677,6 +705,7 @@ function create_map_adder(){
 		general_data[map_name]['teleport'] = "";
 		general_data[map_name]['map size'] = [_local_grid_default[0], _local_grid_default[1]]; //TODO: Defaulting
 		general_data[map_name]['order'] = "";
+		general_data[map_name]['exploration_blobber'] = true;
 		is_map_changed[map_name] = false;
 
 		var map_overlay = create_new_map_overlay(map_name);
@@ -731,8 +760,9 @@ function enforce_new_state(new_state){
 
 //direction - as int, moves - amount of moves towards given direction -> resulting Signature
 function move_in_direction(signature, direction_int, moves=1){
+	var descend = ascending_y?-1:1;
 	[row, column] = signature.split(' ').map((x) => Number(x));
-	return `${row + moves*integer_to_dir[direction_int].y} ${column + moves*integer_to_dir[direction_int].x}`;
+	return `${row + moves*integer_to_dir[direction_int].y*descend} ${column + moves*integer_to_dir[direction_int].x}`;
 }
 
 function determine_next_map(map_name){
@@ -744,11 +774,11 @@ function determine_next_map(map_name){
 		else to_add = -1;
 
 		current_name_split[current_name_split.length-1] = (last+to_add).toString();
-		console.log(current_name_split.join(' '));
 		return current_name_split.join(' ');
 	}
 	return map_name;
 }
+
 function determine_next_signature(signature){
 	if (signature == '_P') return current_state.marked._signature;
 	return signature;
@@ -763,6 +793,53 @@ function create_next_state(map, signature, direction){
 	return {'map':determine_next_map(map), 'signature':determine_next_signature(signature), 'direction':determine_next_direction(direction)};
 }
 
+//start can be inferred from direction
+//start, end - both cells; if start + direction unspecified: border not changed
+function penetrate(end, direction = -1, start = null){
+	var new_place_presentation = points[end];
+	var new_place_data = points_data[current_state.map][end];
+
+	var old_place_presentation = points[start];
+	var old_place_data = points_data[current_state.map][start];
+
+	var changes = [];
+	if (!new_place_data.used){
+		new_place_data.used = true;
+		changes.push([0, end]);
+		new_place_presentation.style['backgroundColor'] = 'white';
+		if (current_focus && current_focus._signature == end) controls.input_used.checked = true;
+	}
+	if (start && !points_data[current_state.map][start].borders[direction]){
+		current_state.marked.style[`border${dir_to_border[direction]}`] = `1px dashed #CCCCCC`;
+		points_data[current_state.map][start].borders[direction] = true;
+		changes.push([1, start, direction]);
+		if (current_focus && current_focus._signature == start) controls.input_borders[direction].checked = true;
+
+		new_place_presentation.style[`border${dir_to_border[(direction+2)%4]}`] = `1px dashed #CCCCCC`;
+		new_place_data.borders[(direction+2)%4] = true;
+		changes.push([1, end, (direction+2)%4]);
+		if (current_focus && current_focus._signature == end) controls.input_borders[(direction+2)%4].checked = true;
+	}
+
+	return changes;
+}
+
+function process_overhead_move(e_key){
+	var changes_introduced = [];
+	var direction = arrow_to_dir[e_key];
+
+	var new_place_signature = move_in_direction(current_state.marked._signature, direction);
+	var new_place_data = points_data[current_state.map][new_place_signature];
+
+	if (new_place_data && (!ground_truth.checked || (new_place_data.used && points_data[current_state.map][current_state.marked._signature].borders[direction]))){
+		if (!ground_truth.checked){
+			changes_introduced.push(...penetrate(new_place_signature, direction, current_state.marked._signature));
+		}
+		enforce_new_state({'map':current_state.map, 'signature':new_place_signature, 'direction':current_state.direction});
+	}
+
+	return changes_introduced;
+}
 
 //Returns: [change]; new state established immediately
 function process_move_forward(e_key){
@@ -826,23 +903,7 @@ function process_move_forward(e_key){
 
 	if (new_place_data && (!ground_truth.checked || (new_place_data.used && points_data[current_state.map][current_state.marked._signature].borders[direction_proper]))){
 		if (!ground_truth.checked){
-			if (!new_place_data.used){
-				new_place_data.used = true;
-				changes_introduced.push([0, new_place_signature]);
-				new_place_presentation.style['backgroundColor'] = 'white';
-				if (current_focus && current_focus._signature == new_place_signature) controls.input_used.checked = true;
-			}
-			if (!points_data[current_state.map][current_state.marked._signature].borders[direction_proper]){
-				current_state.marked.style[`border${dir_to_border[direction_proper]}`] = `1px dashed #CCCCCC`;
-				points_data[current_state.map][current_state.marked._signature].borders[direction_proper] = true;
-				changes_introduced.push([1, current_state.marked._signature, direction_proper]);
-				if (current_focus && current_focus._signature == current_state.marked._signature) controls.input_borders[direction_proper].checked = true;
-
-				new_place_presentation.style[`border${dir_to_border[(direction_proper+2)%4]}`] = `1px dashed #CCCCCC`;
-				new_place_data.borders[(direction_proper+2)%4] = true;
-				changes_introduced.push([1, new_place_signature, (direction_proper+2)%4]);
-				if (current_focus && current_focus._signature == new_place_signature) controls.input_borders[(direction_proper+2)%4].checked = true;
-			}
+			changes_introduced.push(...penetrate(new_place_signature, direction_proper, current_state.marked._signature));
 		}
 
 		if (new_place_data && new_place_data['scripts']){
@@ -870,11 +931,27 @@ document.addEventListener('keydown', function(e){
 	var direction_int = current_state.direction;
 	var direction = integer_to_dir[current_state.direction];
 	var changes_introduced = [];
+	var directional_keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
 
-	if (e.key == 'ArrowUp' || e.key == 'ArrowDown'){
+	if (directional_keys.includes(e.key) && controls.overhead.checked){
+		changes_introduced = process_overhead_move(e.key);
+		if (current_state.map && map_element_overlays[current_state.map] && changes_introduced.length) changer();
+		subsequent_changes.push([Object.assign({}, current_state), changes_introduced]);
+		return;
+	}
+
+
+	if (e.key == 'ArrowUp' || (e.key == 'ArrowDown' && !revert)){
 		changes_introduced = process_move_forward(e.key);
 		if (current_state.map && map_element_overlays[current_state.map] && changes_introduced.length) changer();
 		subsequent_changes.push([Object.assign({}, current_state), changes_introduced]);
+		return;
+	}
+	if (e.key == 'ArrowDown' && revert){
+		current_state.direction = (current_state.direction+2)%4;
+		subsequent_changes.push([Object.assign({}, current_state), []]);
+		update_presentation(current_state);
+		return;
 	}
 
 	if (e.key == 'y'){
@@ -895,6 +972,7 @@ document.addEventListener('keydown', function(e){
 				}
 			}
 		}
+		return;
 	}
 
 	//Change: teleporting into unknown
@@ -902,6 +980,7 @@ document.addEventListener('keydown', function(e){
 		var new_signature = move_in_direction(current_state.marked._signature, current_state.direction, 2);
 		enforce_new_state({'map':current_state.map, 'signature':new_signature, 'direction':current_state.direction});
 		subsequent_changes.push([Object.assign({}, current_state), []]);
+		return;
 	}
 
 	for (var terrain in _local_terrains){
@@ -911,6 +990,7 @@ document.addEventListener('keydown', function(e){
 			else points_data[current_state.map][current_state.marked._signature]['terrains'].add(terrain);
 			proper_background(points_data[current_state.map][current_state.marked._signature], current_state.marked._signature);
 			changer();
+			return;
 		}
 	}
 
@@ -922,6 +1002,7 @@ document.addEventListener('keydown', function(e){
 		else current_state.direction = (current_state.direction + 1)%4;
 		update_presentation(current_state);
 		subsequent_changes.push([Object.assign({}, current_state), []]);
+		return;
 	}
 
 	if (e.key == 'Backspace'){
@@ -954,6 +1035,7 @@ document.addEventListener('keydown', function(e){
 			}
 			update_presentation(current_state);
 		}
+		return;
 	}
 });
 
@@ -1002,6 +1084,7 @@ file_input.onchange = () => {
 			general_data[map_name]['fly'] = full_data['fly'];
 			general_data[map_name]['teleport'] = full_data['teleport'];
 			general_data[map_name]['order'] = full_data['order'];
+			general_data[map_name]['exploration_blobber'] = full_data['exploration_blobber']??true;
 
 			if ('map general' in full_data) general_data[map_name]['map general'] = full_data['map general'];
 			else general_data[map_name]['map general'] = '';

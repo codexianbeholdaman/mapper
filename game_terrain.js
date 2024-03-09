@@ -37,5 +37,14 @@ var GAME_DATA = {
 			'desert':create_terrain('#FFD481', 'd'),
 		},
 		'default map size':[16, 16]
+	},
+
+	'Pool of Radiance':{
+		'terrains':{
+			'river':create_terrain('#99FFFF', 'w'),
+		},
+		'default map size':[16, 16],
+		'y_order':'ascending',
+		'backspace':'revert'
 	}
 }
