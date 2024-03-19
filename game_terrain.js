@@ -46,5 +46,12 @@ var GAME_DATA = {
 		'default map size':[16, 16],
 		'y_order':'ascending',
 		'backspace':'revert'
+	},
+	'Curse of the Azure Bonds':{
+		'terrains':{
+		},
+		'default map size':[16, 16],
+		'y_order':'ascending',
+		'backspace':'revert'
 	}
 }

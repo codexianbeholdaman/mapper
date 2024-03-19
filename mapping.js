@@ -6,7 +6,6 @@ var ascending_y = false;
 var revert = false;
 if ('y_order' in _game_config && _game_config['y_order'] == 'ascending')
 	ascending_y = true;
-console.log(ascending_y);
 if ('backspace' in _game_config && _game_config['backspace'] == 'revert')
 	revert = true;
 
@@ -16,10 +15,14 @@ else _local_grid_default = GRID_SIZE;
 
 
 var controls = {
+	'map_name': document.getElementById('map_name'),
 	'general_text': document.getElementById('general_text'),
 	'scripts_text': document.getElementById('scripts_text'),
 	'images_text': document.getElementById('images_text'),
 	'point_images': document.getElementById('point_images'),
+
+	'rename': document.getElementById('rename'),
+	'save_name': document.getElementById('save_name'),
 
 	'shorthand_text': document.getElementById('shorthand_text'),
 	'fly': document.getElementById('fly'),
@@ -107,11 +110,10 @@ var current_state = {
 current_focus = null;
 presentation = {};
 
-var points_data = {};
-var general_data = {};
-var is_map_changed = {};
-points_data[current_state.map] = {};
-general_data[current_state.map] = {};
+var maps = {};
+maps[current_state.map] = {};
+maps[current_state.map]['points_data'] = {};
+maps[current_state.map]['general_data'] = {};
 
 function create_basic_point(){
 	return {'used':false, 'borders':[false, false, false, false], 'input':'', 'general':'', 'scripts':'', 'images':'', 'terrains':new Set()};
@@ -124,7 +126,7 @@ function update_presentation(current_state){
 
 function set_changer(map){
 	if (map == '_unknown') return;
-	if (is_map_changed[map]) 
+	if (maps[map]['is_map_changed']) 
 		map_element_overlays[map]._changer.style.backgroundColor = '#88CC00';
 	else
 		map_element_overlays[map]._changer.style.backgroundColor = 'rgba(0,0,0,0)';
@@ -133,14 +135,14 @@ function set_changer(map){
 function changer(map=null){
 	if (map == null) map=current_state.map;
 	if (map == '_unknown') return;
-	is_map_changed[map] = true;
+	maps[map]['is_map_changed'] = true;
 	set_changer(map);
 }
 
 function dechanger(map=null){
 	if (map == null) map=current_state.map;
 	if (map == '_unknown') return;
-	is_map_changed[map] = false;
+	maps[map]['is_map_changed'] = false;
 	set_changer(map);
 }
 
@@ -154,7 +156,7 @@ function proper_background(point_data, signature){
 }
 
 function update_field(signature){
-	var to_load = points_data[current_state.map];
+	var to_load = maps[current_state.map]['points_data'];
 	for (var i=0; i<4; i+=1){
 		if (to_load[signature].borders[i]) points[signature].style[`border${dir_to_border[i]}`] = `1px dashed #CCCCCC`;
 		else points[signature].style[`border${dir_to_border[i]}`] = '1px solid black';
@@ -207,9 +209,10 @@ function update_field(signature){
 }
 
 function update_part(map_name, movement, element){
-	if (!general_data[map_name][movement] || general_data[map_name][movement] == '') element.style.display = 'none';
+	var _map_gd = maps[map_name]['general_data'];
+	if (!_map_gd[movement] || _map_gd[movement] == '') element.style.display = 'none';
 
-	else if (general_data[map_name][movement]!='undefined'){
+	else if (_map_gd[movement]!='undefined'){
 		element.style.display = 'inline-block';
 		element.onmouseover = function(){this.style.backgroundColor = '#440000';};
 		element.onmouseout = function(){this.style.backgroundColor = '#880000';};
@@ -219,10 +222,10 @@ function update_part(map_name, movement, element){
 			if (this._type == 'F'){
 				new_direction = current_state.direction;
 				if (new_direction == -1) new_direction = 0; //By default - northern
-				new_place = general_data[map_name][movement];
+				new_place = _map_gd[movement];
 			}
 			else{
-				var _tmp = general_data[map_name][movement].split(';');
+				var _tmp = _map_gd[movement].split(';');
 				new_direction = cardinal_to_dir[_tmp[1]];
 				new_place = _tmp[0];
 			}
@@ -245,25 +248,25 @@ function update_flight(map_name){
 function save_focus(map_switch=false){
 	if (current_focus){
 		var coordinate = current_focus._signature;
-		var past_point = Object.assign({}, points_data[current_state.map][coordinate]);
+		var past_point = Object.assign({}, maps[current_state.map]['points_data'][coordinate]);
 
-		points_data[current_state.map][coordinate]['general'] = controls.general_text.value;
-		points_data[current_state.map][coordinate]['scripts'] = controls.scripts_text.value;
-		points_data[current_state.map][coordinate]['images'] = controls.images_text.value;
-		points_data[current_state.map][coordinate]['input'] = controls.shorthand_text.value;
+		maps[current_state.map]['points_data'][coordinate]['general'] = controls.general_text.value;
+		maps[current_state.map]['points_data'][coordinate]['scripts'] = controls.scripts_text.value;
+		maps[current_state.map]['points_data'][coordinate]['images'] = controls.images_text.value;
+		maps[current_state.map]['points_data'][coordinate]['input'] = controls.shorthand_text.value;
 
 		for (var terrain in _local_terrains){
-			if (controls['terrains'][terrain].checked) points_data[current_state.map][coordinate]['terrains'].add(terrain);
-			else points_data[current_state.map][coordinate]['terrains'].delete(terrain);
+			if (controls['terrains'][terrain].checked) maps[current_state.map]['points_data'][coordinate]['terrains'].add(terrain);
+			else maps[current_state.map]['points_data'][coordinate]['terrains'].delete(terrain);
 		}
 
-		points_data[current_state.map][coordinate].used = controls.input_used.checked;
+		maps[current_state.map]['points_data'][coordinate].used = controls.input_used.checked;
 		var ordering = ['N', 'E', 'S', 'W'];
 		for (var index of [0, 1, 2, 3]){
-			 points_data[current_state.map][coordinate].borders[cardinal_to_dir[ordering[index]]] = controls.input_borders[index].checked;
+			 maps[current_state.map]['points_data'][coordinate].borders[cardinal_to_dir[ordering[index]]] = controls.input_borders[index].checked;
 		}
 
-		if (Object.entries(points_data[current_state.map][coordinate]).sort().toString() !== Object.entries(past_point).sort().toString())
+		if (Object.entries(maps[current_state.map]['points_data'][coordinate]).sort().toString() !== Object.entries(past_point).sort().toString())
 			changer();
 
 		if (!map_switch) update_field(coordinate);
@@ -293,38 +296,37 @@ function redefine_map_size(map_data, new_map_size, old_map_size){
 
 function save_map_data(){
 	save_focus(true);
-	general_data[current_state.map]['order'] = controls.order.value
-	general_data[current_state.map]['ground truth'] = controls.ground_truth.checked;
-	general_data[current_state.map]['fly'] = controls.fly.value;
-	general_data[current_state.map]['teleport'] = controls.teleport.value;
-	general_data[current_state.map]['exploration_blobber'] = controls.blobber.checked;
+	var _map_gd = maps[current_state.map]['general_data'];
+	_map_gd['order'] = controls.order.value
+	_map_gd['ground truth'] = controls.ground_truth.checked;
+	_map_gd['fly'] = controls.fly.value;
+	_map_gd['teleport'] = controls.teleport.value;
+	_map_gd['exploration_blobber'] = controls.blobber.checked;
 
-	var old_map_size = general_data[current_state.map]['map size'];
-	general_data[current_state.map]['map size'] = controls.map_size.value.split(',').map((x) => Number(x));
+	var old_map_size = _map_gd['map size'];
+	_map_gd['map size'] = controls.map_size.value.split(',').map((x) => Number(x));
 
-	if (old_map_size && (old_map_size[0] != general_data[current_state.map]['map size'][0] || old_map_size[1] != general_data[current_state.map]['map size'][1]) && current_state.map != '_unknown')
-		redefine_map_size(points_data[current_state.map], general_data[current_state.map]['map size'], old_map_size);
+	if (old_map_size && (old_map_size[0] != _map_gd['map size'][0] || old_map_size[1] != _map_gd['map size'][1]) && current_state.map != '_unknown')
+		redefine_map_size(maps[current_state.map]['points_data'], _map_gd['map size'], old_map_size);
 
-	general_data[current_state.map]['map general'] = controls.map_general.value;
+	_map_gd['map general'] = controls.map_general.value;
 }
 
 function load_map_presentation(to_load, map_name){
 	current_state['map'] = map_name;
-	resize_grid(general_data[map_name]['map size']);
+	resize_grid(maps[map_name]['general_data']['map size']);
 
-	controls.ground_truth.checked = general_data[map_name]['ground truth'];
-	controls.fly.value = general_data[map_name]['fly'];
-	controls.teleport.value = general_data[map_name]['teleport']??'';
+	var _map_gd = maps[current_state.map]['general_data'];
+	controls.ground_truth.checked = _map_gd['ground truth'];
+	controls.fly.value = _map_gd['fly'];
+	controls.teleport.value = _map_gd['teleport']??'';
 
-	controls.map_size.value = general_data[map_name]['map size'];
-	controls.blobber.checked = general_data[map_name]['exploration_blobber'];
-	controls.overhead.checked = !general_data[map_name]['exploration_blobber'];
+	controls.map_size.value = _map_gd['map size'];
+	controls.blobber.checked = _map_gd['exploration_blobber'];
+	controls.overhead.checked = !_map_gd['exploration_blobber'];
 
-	if ('map general' in general_data[map_name]) controls.map_general.value = general_data[map_name]['map general'];
-	else controls.map_general.value = '';
-
-	if ('order' in general_data[map_name]) controls.order.value = general_data[map_name]['order'];
-	else controls.order.value = '';
+	controls.map_general.value = _map_gd['map general']??'';
+	controls.order.value = _map_gd['order']??'';
 
 	for (var coordinates in to_load) update_field(coordinates);
 
@@ -349,7 +351,24 @@ function change_map(new_map){
 	update_flight(current_state.map);
 
 	current_state['map'] = new_map;
-	load_map_presentation(points_data[new_map], new_map);
+	load_map_presentation(maps[new_map]['points_data'], new_map);
+	controls.map_name.value = new_map;
+}
+
+function rename_map(old_map_name, new_map_name){
+	if (map_element_overlays[old_map_name]){
+		map_element_overlays[old_map_name]._element.innerHTML = new_map_name;
+		map_element_overlays[old_map_name]._element._map_name = new_map_name;
+
+		maps[new_map_name] = maps[old_map_name];
+		delete maps[old_map_name];
+
+		map_element_overlays[new_map_name] = map_element_overlays[old_map_name];
+		delete map_element_overlays[old_map_name];
+	}
+
+	if (current_state.map == old_map_name)
+		current_state.map = new_map_name;
 }
 
 function create_movement_overlay(letter){
@@ -417,11 +436,11 @@ function create_new_map_overlay(map_name){
 }
 
 function initialize_map_data(map_name, grid_size){
-	points_data[map_name] = {};
+	maps[map_name]['points_data'] = {};
 
 	for (var row_nr = 0; row_nr < grid_size[0]; row_nr+=1){
 		for (var column_nr = 0; column_nr < grid_size[1]; column_nr+=1){
-			points_data[map_name][`${row_nr} ${column_nr}`] = create_basic_point();
+			maps[map_name]['points_data'][`${row_nr} ${column_nr}`] = create_basic_point();
 		}
 	}
 }
@@ -440,12 +459,12 @@ function get_map_size(points){
 function create_data_dump(){
 	var map_name = current_state['map'];
 	save_map_data();
-	var save_data = general_data[map_name];
+	var save_data = maps[map_name]['general_data'];
 
 	to_save = {'title':map_name, 'ground truth':save_data['ground truth'], 'fly':save_data['fly'], 'exploration_blobber':save_data['exploration_blobber'], 'teleport':save_data['teleport'], 'map size':save_data['map size'], 'map general':save_data['map general'], 'order':save_data['order'], 'points':{}};
 
-	for (var point_coordinate in points_data[map_name]){
-		var point = points_data[map_name][point_coordinate];
+	for (var point_coordinate in maps[map_name]['points_data']){
+		var point = maps[map_name]['points_data'][point_coordinate];
 		var terrains = [...point.terrains];
 
 		to_save.points[point_coordinate] = {
@@ -632,22 +651,22 @@ function create_grid(grid_size){
 
 				this._marking.style.background = 'linear-gradient(to right bottom, #AA0000 50%, rgba(0, 0, 0, 0) 50%)';
 				current_focus = this;
-				controls.images_text.value = points_data[current_state.map][current_focus._signature].images;
-				controls.scripts_text.value = points_data[current_state.map][current_focus._signature].scripts;
-				controls.shorthand_text.value = points_data[current_state.map][current_focus._signature].input;
-				controls.general_text.value = points_data[current_state.map][current_focus._signature].general;
+				controls.images_text.value = maps[current_state.map]['point_data'][current_focus._signature].images;
+				controls.scripts_text.value = maps[current_state.map]['point_data'][current_focus._signature].scripts;
+				controls.shorthand_text.value = maps[current_state.map]['point_data'][current_focus._signature].input;
+				controls.general_text.value = maps[current_state.map]['point_data'][current_focus._signature].general;
 
 				for (var terrain in _local_terrains){
-					if (points_data[current_state.map][current_focus._signature]['terrains'].has(terrain)) controls['terrains'][terrain].checked = true;
+					if (maps[current_state.map]['point_data'][current_focus._signature]['terrains'].has(terrain)) controls['terrains'][terrain].checked = true;
 					else controls['terrains'][terrain].checked = false;
 				}
 
-				controls.input_used.checked = points_data[current_state.map][current_focus._signature].used;
+				controls.input_used.checked = maps[current_state.map]['point_data'][current_focus._signature].used;
 				var ordering = ['N', 'E', 'S', 'W'];
 				for (var index of [0, 1, 2, 3]){
-					controls.input_borders[index].checked = points_data[current_state.map][current_focus._signature].borders[cardinal_to_dir[ordering[index]]];
+					controls.input_borders[index].checked = maps[current_state.map]['points_data'][current_focus._signature].borders[cardinal_to_dir[ordering[index]]];
 				}
-				for (var image of points_data[current_state.map][current_focus._signature].images.split('\n')){
+				for (var image of maps[current_state.map]['points_data'][current_focus._signature].images.split('\n')){
 					if (image){
 						var pic = document.createElement('img');
 						pic.src = _CONFIG_PREFIX + image;
@@ -659,7 +678,7 @@ function create_grid(grid_size){
 			});
 
 			point.addEventListener('click', function(){
-				if (ground_truth.checked && !points_data[current_state.map][this._signature].used) return;
+				if (ground_truth.checked && !maps[current_state.map]['points_data'][this._signature].used) return;
 				if (current_state.marked) current_state.marked._arrow.innerHTML = '';
 				
 				current_state.direction = 0;
@@ -668,10 +687,10 @@ function create_grid(grid_size){
 				current_state.marked = this;
 
 				var data_to_push = [];
-				if (!points_data[current_state.map][this._signature].used){
+				if (!maps[current_state.map]['points_data'][this._signature].used){
 					if (map_element_overlays[current_state.map]) changer();
-					points_data[current_state.map][this._signature].used = true;
-					proper_background(points_data[current_state.map][this._signature], this._signature);
+					maps[current_state.map]['points_data'][this._signature].used = true;
+					proper_background(maps[current_state.map]['points_data'][this._signature], this._signature);
 					data_to_push.push([0, this._signature]);
 				}
 				subsequent_changes.push([Object.assign({}, current_state), data_to_push]);
@@ -699,14 +718,18 @@ function create_map_adder(){
 	map_adder.innerHTML = '+';
 	map_adder.onclick = function(){
 		map_name = add_map.value;
-		general_data[map_name] = {};
-		general_data[map_name]['ground truth'] = false;
-		general_data[map_name]['fly'] = "";
-		general_data[map_name]['teleport'] = "";
-		general_data[map_name]['map size'] = [_local_grid_default[0], _local_grid_default[1]]; //TODO: Defaulting
-		general_data[map_name]['order'] = "";
-		general_data[map_name]['exploration_blobber'] = true;
-		is_map_changed[map_name] = false;
+
+		maps[map_name] = {}
+		maps[map_name]['general_data'] = {}
+		var _map_gd = maps[map_name]['general_data']
+
+		_map_gd['ground truth'] = false;
+		_map_gd['fly'] = "";
+		_map_gd['teleport'] = "";
+		_map_gd['map size'] = [_local_grid_default[0], _local_grid_default[1]]; //TODO: Defaulting
+		_map_gd['order'] = "";
+		_map_gd['exploration_blobber'] = true;
+		maps[map_name]['is_map_changed'] = false;
 
 		var map_overlay = create_new_map_overlay(map_name);
 		map_element_overlays[map_name] = map_overlay;
@@ -728,9 +751,9 @@ controls.orderer.onclick = function(){
 		map_element_overlays[current_state.map]._element.style.backgroundColor = '#880000';
 
 	var sorted_maps = [];
-	for (var map_name in general_data){
+	for (var map_name in maps){
 		if (map_name == '_unknown') continue;
-		sorted_maps.push([general_data[map_name]['order'], map_name])
+		sorted_maps.push([maps[map_name]['general_data']['order'], map_name])
 	}
 	sorted_maps.sort();
 
@@ -797,10 +820,10 @@ function create_next_state(map, signature, direction){
 //start, end - both cells; if start + direction unspecified: border not changed
 function penetrate(end, direction = -1, start = null){
 	var new_place_presentation = points[end];
-	var new_place_data = points_data[current_state.map][end];
+	var new_place_data = maps[current_state.map]['points_data'][end];
 
 	var old_place_presentation = points[start];
-	var old_place_data = points_data[current_state.map][start];
+	var old_place_data = maps[current_state.map]['points_data'][start];
 
 	var changes = [];
 	if (!new_place_data.used){
@@ -809,9 +832,9 @@ function penetrate(end, direction = -1, start = null){
 		new_place_presentation.style['backgroundColor'] = 'white';
 		if (current_focus && current_focus._signature == end) controls.input_used.checked = true;
 	}
-	if (start && !points_data[current_state.map][start].borders[direction]){
+	if (start && !maps[current_state.map]['points_data'][start].borders[direction]){
 		current_state.marked.style[`border${dir_to_border[direction]}`] = `1px dashed #CCCCCC`;
-		points_data[current_state.map][start].borders[direction] = true;
+		maps[current_state.map]['points_data'][start].borders[direction] = true;
 		changes.push([1, start, direction]);
 		if (current_focus && current_focus._signature == start) controls.input_borders[direction].checked = true;
 
@@ -829,9 +852,9 @@ function process_overhead_move(e_key){
 	var direction = arrow_to_dir[e_key];
 
 	var new_place_signature = move_in_direction(current_state.marked._signature, direction);
-	var new_place_data = points_data[current_state.map][new_place_signature];
+	var new_place_data = maps[current_state.map]['points_data'][new_place_signature];
 
-	if (new_place_data && (!ground_truth.checked || (new_place_data.used && points_data[current_state.map][current_state.marked._signature].borders[direction]))){
+	if (new_place_data && (!ground_truth.checked || (new_place_data.used && maps[current_state.map]['points_data'][current_state.marked._signature].borders[direction]))){
 		if (!ground_truth.checked){
 			changes_introduced.push(...penetrate(new_place_signature, direction, current_state.marked._signature));
 		}
@@ -849,8 +872,8 @@ function process_move_forward(e_key){
 	var changes_introduced = [];
 
 	var direction_proper = ((e_key == 'ArrowUp') ? direction_int : (direction_int+2)%4);
-	if (points_data[current_state.map][current_state.marked._signature]['scripts']){
-		var partial_scripts = points_data[current_state.map][current_state.marked._signature]['scripts'].split('\n');
+	if (maps[current_state.map]['points_data'][current_state.marked._signature]['scripts']){
+		var partial_scripts = maps[current_state.map]['points_data'][current_state.marked._signature]['scripts'].split('\n');
 
 		for (var script of partial_scripts){
 			var proper_script = script.split(';');
@@ -899,9 +922,9 @@ function process_move_forward(e_key){
 
 	var new_place_signature = move_in_direction(current_state.marked._signature, direction_proper);
 	var new_place_presentation = points[new_place_signature];
-	var new_place_data = points_data[current_state.map][new_place_signature];
+	var new_place_data = maps[current_state.map]['points_data'][new_place_signature];
 
-	if (new_place_data && (!ground_truth.checked || (new_place_data.used && points_data[current_state.map][current_state.marked._signature].borders[direction_proper]))){
+	if (new_place_data && (!ground_truth.checked || (new_place_data.used && maps[current_state.map]['points_data'][current_state.marked._signature].borders[direction_proper]))){
 		if (!ground_truth.checked){
 			changes_introduced.push(...penetrate(new_place_signature, direction_proper, current_state.marked._signature));
 		}
@@ -955,8 +978,8 @@ document.addEventListener('keydown', function(e){
 	}
 
 	if (e.key == 'y'){
-		if (points_data[current_state.map][current_state.marked._signature]['scripts']){
-			var partial_scripts = points_data[current_state.map][current_state.marked._signature]['scripts'].split('\n');
+		if (maps[current_state.map]['points_data'][current_state.marked._signature]['scripts']){
+			var partial_scripts = maps[current_state.map]['points_data'][current_state.marked._signature]['scripts'].split('\n');
 			for (var script of partial_scripts){
 				var proper_script = script.split(';');
 
@@ -985,10 +1008,10 @@ document.addEventListener('keydown', function(e){
 
 	for (var terrain in _local_terrains){
 		if (e.key == _local_terrains[terrain]['button']){
-			if (points_data[current_state.map][current_state.marked._signature]['terrains'].has(terrain)) 
-				points_data[current_state.map][current_state.marked._signature]['terrains'].delete(terrain);
-			else points_data[current_state.map][current_state.marked._signature]['terrains'].add(terrain);
-			proper_background(points_data[current_state.map][current_state.marked._signature], current_state.marked._signature);
+			if (maps[current_state.map]['points_data'][current_state.marked._signature]['terrains'].has(terrain)) 
+				maps[current_state.map]['points_data'][current_state.marked._signature]['terrains'].delete(terrain);
+			else maps[current_state.map]['points_data'][current_state.marked._signature]['terrains'].add(terrain);
+			proper_background(maps[current_state.map]['points_data'][current_state.marked._signature], current_state.marked._signature);
 			changer();
 			return;
 		}
@@ -1015,11 +1038,11 @@ document.addEventListener('keydown', function(e){
 			for (var change of last_changes){
 				if (change[0] == 1){
 					points[change[1]].style[`border${dir_to_border[change[2]]}`] = '1px solid black';
-					points_data[current_state.map][change[1]].borders[change[2]] = false;
+					maps[current_state.map]['points_data'][change[1]].borders[change[2]] = false;
 				}
 				if (change[0] == 0){
 					points[change[1]].style[`backgroundColor`] = 'grey';
-					points_data[current_state.map][change[1]].used = false;
+					maps[current_state.map]['points_data'][change[1]].used = false;
 				}
 			}
 
@@ -1046,7 +1069,7 @@ document.getElementById('saver').onclick = function(){
 	//window.open(URL.createObjectURL(blob));
 
 	var _a = document.createElement('a');
-	_a.download = current_state.map + '.txt';
+	_a.download = current_state.map + '.json';
 	_a.href = URL.createObjectURL(blob);
 	_a.dataset.downloadurl = ['json', _a.download, _a.href].join(':');
 	_a.style.display = 'none';
@@ -1077,21 +1100,22 @@ file_input.onchange = () => {
 		var _ = map.text().then(function(result){
 			full_data = JSON.parse(result);
 			map_name = full_data['title'];
-			is_map_changed[map_name] = false;
+			maps[map_name] = {};
+			maps[map_name]['is_map_changed'] = false;
 
-			general_data[map_name] = {};
-			general_data[map_name]['ground truth'] = full_data['ground truth'];
-			general_data[map_name]['fly'] = full_data['fly'];
-			general_data[map_name]['teleport'] = full_data['teleport'];
-			general_data[map_name]['order'] = full_data['order'];
-			general_data[map_name]['exploration_blobber'] = full_data['exploration_blobber']??true;
+			_map = maps[map_name];
+			_map['general_data'] = {};
+			_map_gd = _map['general_data'];
 
-			if ('map general' in full_data) general_data[map_name]['map general'] = full_data['map general'];
-			else general_data[map_name]['map general'] = '';
+			_map_gd['ground truth'] = full_data['ground truth'];
+			_map_gd['fly'] = full_data['fly'];
+			_map_gd['teleport'] = full_data['teleport'];
+			_map_gd['order'] = full_data['order'];
+			_map_gd['exploration_blobber'] = full_data['exploration_blobber']??true;
+			_map_gd['map general'] = full_data['map general']??'';
+			_map_gd['map size'] = full_data['map size']??get_map_size(maps[map_name]['points_data']);
 
-			points_data[map_name] = terrainer(full_data['points']);
-			if ('map size' in full_data) general_data[map_name]['map size'] = full_data['map size'];
-			else general_data[map_name]['map size'] = get_map_size(points_data[map_name]);
+			_map['points_data'] = terrainer(full_data['points']);
 
 			if (map_name in map_element_overlays) dechanger(map_name);
 			else{
@@ -1103,3 +1127,12 @@ file_input.onchange = () => {
 		});
 	}
 }
+
+document.getElementById('rename').onclick = function(){
+	controls.map_name.disabled = false;
+};
+
+document.getElementById('save_name').onclick = function(){
+	controls.map_name.disabled = true;
+	rename_map(current_state.map, controls.map_name.value);
+};
