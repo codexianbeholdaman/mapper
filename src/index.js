@@ -1,2 +1,2 @@
-import {main} from './seminal.js';
-main();
+import {Application} from './seminal.js';
+new Application();
