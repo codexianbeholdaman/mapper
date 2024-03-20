@@ -1,3 +1,7 @@
+import {_CONFIG_ACCESS_POINT_DATA, _CONFIG_GAME, _CONFIG_PREFIX, _CONFIG_MAX_MAP_SIZE} from './config.js';
+import {GAME_DATA} from './game_terrain.js';
+import {standard_style, map_element_style, arrowy_style, inputter_style, point_of_entry_style, marking_style, teleports_style, mini_teleport_style, assign_style_to_element, single_distance_teleport} from './presentation.js';
+
 var GRID_SIZE = [_CONFIG_MAX_MAP_SIZE, _CONFIG_MAX_MAP_SIZE];
 var _game_config = GAME_DATA[_CONFIG_GAME];
 var _local_terrains = _game_config['terrains'];
@@ -107,8 +111,8 @@ var current_state = {
 	'direction':-1,
 	'map':'_unknown'
 }
-current_focus = null;
-presentation = {};
+var current_focus = null;
+var presentation = {};
 
 var maps = {};
 maps[current_state.map] = {};
@@ -446,7 +450,7 @@ function initialize_map_data(map_name, grid_size){
 }
 
 function get_map_size(points){
-	all_points = Object.keys(points).map((x) => (x.split(' ').map((y) => Number(y))));
+	var all_points = Object.keys(points).map((x) => (x.split(' ').map((y) => Number(y))));
 
 	var max_x = 0, max_y = 0;
 	for (var coordinates of all_points){
@@ -481,8 +485,8 @@ function create_data_dump(){
 }
 
 function resize_grid(new_size){
-	size_y = new_size[0];
-	size_x = new_size[1];
+	var size_y = new_size[0];
+	var size_x = new_size[1];
 
 	for (var y=0; y<GRID_SIZE[0]; y++){
 		if (y<size_y) presentation['row_labels'][y].style.display = 'inline-block';
@@ -651,17 +655,17 @@ function create_grid(grid_size){
 
 				this._marking.style.background = 'linear-gradient(to right bottom, #AA0000 50%, rgba(0, 0, 0, 0) 50%)';
 				current_focus = this;
-				controls.images_text.value = maps[current_state.map]['point_data'][current_focus._signature].images;
-				controls.scripts_text.value = maps[current_state.map]['point_data'][current_focus._signature].scripts;
-				controls.shorthand_text.value = maps[current_state.map]['point_data'][current_focus._signature].input;
-				controls.general_text.value = maps[current_state.map]['point_data'][current_focus._signature].general;
+				controls.images_text.value = maps[current_state.map]['points_data'][current_focus._signature].images;
+				controls.scripts_text.value = maps[current_state.map]['points_data'][current_focus._signature].scripts;
+				controls.shorthand_text.value = maps[current_state.map]['points_data'][current_focus._signature].input;
+				controls.general_text.value = maps[current_state.map]['points_data'][current_focus._signature].general;
 
 				for (var terrain in _local_terrains){
-					if (maps[current_state.map]['point_data'][current_focus._signature]['terrains'].has(terrain)) controls['terrains'][terrain].checked = true;
+					if (maps[current_state.map]['points_data'][current_focus._signature]['terrains'].has(terrain)) controls['terrains'][terrain].checked = true;
 					else controls['terrains'][terrain].checked = false;
 				}
 
-				controls.input_used.checked = maps[current_state.map]['point_data'][current_focus._signature].used;
+				controls.input_used.checked = maps[current_state.map]['points_data'][current_focus._signature].used;
 				var ordering = ['N', 'E', 'S', 'W'];
 				for (var index of [0, 1, 2, 3]){
 					controls.input_borders[index].checked = maps[current_state.map]['points_data'][current_focus._signature].borders[cardinal_to_dir[ordering[index]]];
@@ -743,34 +747,7 @@ function create_map_adder(){
 }
 
 var points = create_grid(GRID_SIZE);
-create_map_adder();
 var subsequent_changes = [];
-initialize_map_data('_unknown', GRID_SIZE);
-controls.orderer.onclick = function(){
-	if (current_state.map != '_unknown')
-		map_element_overlays[current_state.map]._element.style.backgroundColor = '#880000';
-
-	var sorted_maps = [];
-	for (var map_name in maps){
-		if (map_name == '_unknown') continue;
-		sorted_maps.push([maps[map_name]['general_data']['order'], map_name])
-	}
-	sorted_maps.sort();
-
-	var sorted_divs = document.getElementsByClassName('map_overlay');
-	for (var [index, map_data] of sorted_maps.entries()){
-		var map_name = map_data[1];
-		sorted_divs[index]._element._map_name = map_name;
-		sorted_divs[index]._text.innerHTML = map_name;
-		map_element_overlays[map_name] = sorted_divs[index];
-		update_flight(map_name);
-		set_changer(map_name);
-	}
-
-	if (current_state.map != '_unknown')
-		map_element_overlays[current_state.map]._element.style.backgroundColor = 'black';
-}
-
 
 function enforce_new_state(new_state){
 	if (current_state.map != new_state.map) change_map(new_state.map);
@@ -783,7 +760,7 @@ function enforce_new_state(new_state){
 
 //direction - as int, moves - amount of moves towards given direction -> resulting Signature
 function move_in_direction(signature, direction_int, moves=1){
-	var descend = ascending_y?-1:1;
+	var descend = ascending_y?-1:1, row, column;
 	[row, column] = signature.split(' ').map((x) => Number(x));
 	return `${row + moves*integer_to_dir[direction_int].y*descend} ${column + moves*integer_to_dir[direction_int].x}`;
 }
@@ -944,139 +921,6 @@ function process_move_forward(e_key){
 	return changes_introduced;
 }
 
-document.addEventListener('keydown', function(e){
-	if((e.target.tagName == 'INPUT' && e.target.getAttribute('type') != 'checkbox') || e.target.tagName == 'TEXTAREA') return;
-	if (e.key == 't') ground_truth.checked = !ground_truth.checked;
-
-	if (!current_state.marked) return;
-
-	var current_place = current_state.marked._coordinates;
-	var direction_int = current_state.direction;
-	var direction = integer_to_dir[current_state.direction];
-	var changes_introduced = [];
-	var directional_keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
-
-	if (directional_keys.includes(e.key) && controls.overhead.checked){
-		changes_introduced = process_overhead_move(e.key);
-		if (current_state.map && map_element_overlays[current_state.map] && changes_introduced.length) changer();
-		subsequent_changes.push([Object.assign({}, current_state), changes_introduced]);
-		return;
-	}
-
-
-	if (e.key == 'ArrowUp' || (e.key == 'ArrowDown' && !revert)){
-		changes_introduced = process_move_forward(e.key);
-		if (current_state.map && map_element_overlays[current_state.map] && changes_introduced.length) changer();
-		subsequent_changes.push([Object.assign({}, current_state), changes_introduced]);
-		return;
-	}
-	if (e.key == 'ArrowDown' && revert){
-		current_state.direction = (current_state.direction+2)%4;
-		subsequent_changes.push([Object.assign({}, current_state), []]);
-		update_presentation(current_state);
-		return;
-	}
-
-	if (e.key == 'y'){
-		if (maps[current_state.map]['points_data'][current_state.marked._signature]['scripts']){
-			var partial_scripts = maps[current_state.map]['points_data'][current_state.marked._signature]['scripts'].split('\n');
-			for (var script of partial_scripts){
-				var proper_script = script.split(';');
-
-				if (proper_script[0] == 'P' && proper_script[1].includes(dir_to_cardinal[direction_int])){
-					enforce_new_state(create_next_state(proper_script[2], proper_script[3], proper_script[4]??current_state.direction));
-					subsequent_changes.push([Object.assign({}, current_state), []]);
-				}
-
-				if (proper_script[0] == 'R' && proper_script[1] == dir_to_cardinal[direction_int]){
-					current_state.direction = (current_state.direction+2)%4;
-					subsequent_changes.push([Object.assign({}, current_state), []]);
-					update_presentation(current_state);
-				}
-			}
-		}
-		return;
-	}
-
-	//Change: teleporting into unknown
-	if (e.key == 'j'){
-		var new_signature = move_in_direction(current_state.marked._signature, current_state.direction, 2);
-		enforce_new_state({'map':current_state.map, 'signature':new_signature, 'direction':current_state.direction});
-		subsequent_changes.push([Object.assign({}, current_state), []]);
-		return;
-	}
-
-	for (var terrain in _local_terrains){
-		if (e.key == _local_terrains[terrain]['button']){
-			if (maps[current_state.map]['points_data'][current_state.marked._signature]['terrains'].has(terrain)) 
-				maps[current_state.map]['points_data'][current_state.marked._signature]['terrains'].delete(terrain);
-			else maps[current_state.map]['points_data'][current_state.marked._signature]['terrains'].add(terrain);
-			proper_background(maps[current_state.map]['points_data'][current_state.marked._signature], current_state.marked._signature);
-			changer();
-			return;
-		}
-	}
-
-	if (e.key == 'ArrowLeft' || e.key == 'ArrowRight'){
-		if (e.key == 'ArrowLeft'){
-			current_state.direction -= 1;
-			if (current_state.direction < 0) current_state.direction += 4;
-		}
-		else current_state.direction = (current_state.direction + 1)%4;
-		update_presentation(current_state);
-		subsequent_changes.push([Object.assign({}, current_state), []]);
-		return;
-	}
-
-	if (e.key == 'Backspace'){
-		if (document.activeElement.tagName == 'INPUT') ;
-		else if (subsequent_changes){
-			current_state.marked._arrow.innerHTML = '';
-			var dead_state, last_changes;
-			[dead_state, last_changes] = subsequent_changes.pop();
-
-			for (var change of last_changes){
-				if (change[0] == 1){
-					points[change[1]].style[`border${dir_to_border[change[2]]}`] = '1px solid black';
-					maps[current_state.map]['points_data'][change[1]].borders[change[2]] = false;
-				}
-				if (change[0] == 0){
-					points[change[1]].style[`backgroundColor`] = 'grey';
-					maps[current_state.map]['points_data'][change[1]].used = false;
-				}
-			}
-
-			if (subsequent_changes.length){
-				var last_state = subsequent_changes[subsequent_changes.length-1][0];
-				if (last_state.map != current_state.map) change_map(last_state.map);
-				current_state.direction = last_state.direction;
-				current_state.marked = last_state.marked;
-			}
-			else{
-				current_state.direction = -1;
-				current_state.marked = null;
-			}
-			update_presentation(current_state);
-		}
-		return;
-	}
-});
-
-document.getElementById('saver').onclick = function(){
-	dechanger();
-	var points_data = [JSON.stringify(create_data_dump())];
-	var blob = new Blob(points_data, {type : 'text/plain'}); // the blob
-	//window.open(URL.createObjectURL(blob));
-
-	var _a = document.createElement('a');
-	_a.download = current_state.map + '.json';
-	_a.href = URL.createObjectURL(blob);
-	_a.dataset.downloadurl = ['json', _a.download, _a.href].join(':');
-	_a.style.display = 'none';
-	document.body.appendChild(_a);
-	_a.click();
-	document.body.removeChild(_a);
-};
 
 //TODO: old version files: change everything... somehow
 function terrainer(points_data){
@@ -1091,48 +935,211 @@ function terrainer(points_data){
 	return points_data;
 }
 
-const file_input = document.getElementById('loader');
-file_input.onchange = () => {
-	var all_selected = file_input.files;
+export function main(){
+	create_map_adder();
+	initialize_map_data('_unknown', GRID_SIZE);
+	controls.orderer.onclick = function(){
+		if (current_state.map != '_unknown')
+			map_element_overlays[current_state.map]._element.style.backgroundColor = '#880000';
 
-	save_map_data();
-	for (var map of all_selected){
-		var _ = map.text().then(function(result){
-			full_data = JSON.parse(result);
-			map_name = full_data['title'];
-			maps[map_name] = {};
-			maps[map_name]['is_map_changed'] = false;
+		var sorted_maps = [];
+		for (var map_name in maps){
+			if (map_name == '_unknown') continue;
+			sorted_maps.push([maps[map_name]['general_data']['order'], map_name])
+		}
+		sorted_maps.sort();
 
-			_map = maps[map_name];
-			_map['general_data'] = {};
-			_map_gd = _map['general_data'];
+		var sorted_divs = document.getElementsByClassName('map_overlay');
+		for (var [index, map_data] of sorted_maps.entries()){
+			var map_name = map_data[1];
+			sorted_divs[index]._element._map_name = map_name;
+			sorted_divs[index]._text.innerHTML = map_name;
+			map_element_overlays[map_name] = sorted_divs[index];
+			update_flight(map_name);
+			set_changer(map_name);
+		}
 
-			_map_gd['ground truth'] = full_data['ground truth'];
-			_map_gd['fly'] = full_data['fly'];
-			_map_gd['teleport'] = full_data['teleport'];
-			_map_gd['order'] = full_data['order'];
-			_map_gd['exploration_blobber'] = full_data['exploration_blobber']??true;
-			_map_gd['map general'] = full_data['map general']??'';
-			_map_gd['map size'] = full_data['map size']??get_map_size(maps[map_name]['points_data']);
-
-			_map['points_data'] = terrainer(full_data['points']);
-
-			if (map_name in map_element_overlays) dechanger(map_name);
-			else{
-				var map_overlay = create_new_map_overlay(map_name);
-				map_element_overlays[map_name] = map_overlay;
-				controls.maps_list.appendChild(map_overlay);
-				update_flight(map_name);
-			}
-		});
+		if (current_state.map != '_unknown')
+			map_element_overlays[current_state.map]._element.style.backgroundColor = 'black';
 	}
+
+	document.addEventListener('keydown', function(e){
+		if((e.target.tagName == 'INPUT' && e.target.getAttribute('type') != 'checkbox') || e.target.tagName == 'TEXTAREA') return;
+		if (e.key == 't') ground_truth.checked = !ground_truth.checked;
+
+		if (!current_state.marked) return;
+
+		var current_place = current_state.marked._coordinates;
+		var direction_int = current_state.direction;
+		var direction = integer_to_dir[current_state.direction];
+		var changes_introduced = [];
+		var directional_keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+
+		if (directional_keys.includes(e.key) && controls.overhead.checked){
+			changes_introduced = process_overhead_move(e.key);
+			if (current_state.map && map_element_overlays[current_state.map] && changes_introduced.length) changer();
+			subsequent_changes.push([Object.assign({}, current_state), changes_introduced]);
+			return;
+		}
+
+
+		if (e.key == 'ArrowUp' || (e.key == 'ArrowDown' && !revert)){
+			changes_introduced = process_move_forward(e.key);
+			if (current_state.map && map_element_overlays[current_state.map] && changes_introduced.length) changer();
+			subsequent_changes.push([Object.assign({}, current_state), changes_introduced]);
+			return;
+		}
+		if (e.key == 'ArrowDown' && revert){
+			current_state.direction = (current_state.direction+2)%4;
+			subsequent_changes.push([Object.assign({}, current_state), []]);
+			update_presentation(current_state);
+			return;
+		}
+
+		if (e.key == 'y'){
+			if (maps[current_state.map]['points_data'][current_state.marked._signature]['scripts']){
+				var partial_scripts = maps[current_state.map]['points_data'][current_state.marked._signature]['scripts'].split('\n');
+				for (var script of partial_scripts){
+					var proper_script = script.split(';');
+
+					if (proper_script[0] == 'P' && proper_script[1].includes(dir_to_cardinal[direction_int])){
+						enforce_new_state(create_next_state(proper_script[2], proper_script[3], proper_script[4]??current_state.direction));
+						subsequent_changes.push([Object.assign({}, current_state), []]);
+					}
+
+					if (proper_script[0] == 'R' && proper_script[1] == dir_to_cardinal[direction_int]){
+						current_state.direction = (current_state.direction+2)%4;
+						subsequent_changes.push([Object.assign({}, current_state), []]);
+						update_presentation(current_state);
+					}
+				}
+			}
+			return;
+		}
+
+		//Change: teleporting into unknown
+		if (e.key == 'j'){
+			var new_signature = move_in_direction(current_state.marked._signature, current_state.direction, 2);
+			enforce_new_state({'map':current_state.map, 'signature':new_signature, 'direction':current_state.direction});
+			subsequent_changes.push([Object.assign({}, current_state), []]);
+			return;
+		}
+
+		for (var terrain in _local_terrains){
+			if (e.key == _local_terrains[terrain]['button']){
+				if (maps[current_state.map]['points_data'][current_state.marked._signature]['terrains'].has(terrain)) 
+					maps[current_state.map]['points_data'][current_state.marked._signature]['terrains'].delete(terrain);
+				else maps[current_state.map]['points_data'][current_state.marked._signature]['terrains'].add(terrain);
+				proper_background(maps[current_state.map]['points_data'][current_state.marked._signature], current_state.marked._signature);
+				changer();
+				return;
+			}
+		}
+
+		if (e.key == 'ArrowLeft' || e.key == 'ArrowRight'){
+			if (e.key == 'ArrowLeft'){
+				current_state.direction -= 1;
+				if (current_state.direction < 0) current_state.direction += 4;
+			}
+			else current_state.direction = (current_state.direction + 1)%4;
+			update_presentation(current_state);
+			subsequent_changes.push([Object.assign({}, current_state), []]);
+			return;
+		}
+
+		if (e.key == 'Backspace'){
+			if (document.activeElement.tagName == 'INPUT') ;
+			else if (subsequent_changes){
+				current_state.marked._arrow.innerHTML = '';
+				var dead_state, last_changes;
+				[dead_state, last_changes] = subsequent_changes.pop();
+
+				for (var change of last_changes){
+					if (change[0] == 1){
+						points[change[1]].style[`border${dir_to_border[change[2]]}`] = '1px solid black';
+						maps[current_state.map]['points_data'][change[1]].borders[change[2]] = false;
+					}
+					if (change[0] == 0){
+						points[change[1]].style[`backgroundColor`] = 'grey';
+						maps[current_state.map]['points_data'][change[1]].used = false;
+					}
+				}
+
+				if (subsequent_changes.length){
+					var last_state = subsequent_changes[subsequent_changes.length-1][0];
+					if (last_state.map != current_state.map) change_map(last_state.map);
+					current_state.direction = last_state.direction;
+					current_state.marked = last_state.marked;
+				}
+				else{
+					current_state.direction = -1;
+					current_state.marked = null;
+				}
+				update_presentation(current_state);
+			}
+			return;
+		}
+	});
+
+	document.getElementById('saver').onclick = function(){
+		dechanger();
+		var points_data = [JSON.stringify(create_data_dump())];
+		var blob = new Blob(points_data, {type : 'text/plain'}); // the blob
+		//window.open(URL.createObjectURL(blob));
+
+		var _a = document.createElement('a');
+		_a.download = current_state.map + '.json';
+		_a.href = URL.createObjectURL(blob);
+		_a.dataset.downloadurl = ['json', _a.download, _a.href].join(':');
+		_a.style.display = 'none';
+		document.body.appendChild(_a);
+		_a.click();
+		document.body.removeChild(_a);
+	};
+
+	const file_input = document.getElementById('loader');
+	file_input.onchange = () => {
+		var all_selected = file_input.files;
+
+		save_map_data();
+		for (var map of all_selected){
+			var _ = map.text().then(function(result){
+				var full_data = JSON.parse(result);
+				var map_name = full_data['title'];
+				maps[map_name] = {};
+				maps[map_name]['is_map_changed'] = false;
+
+				var _map = maps[map_name];
+				_map['general_data'] = {};
+				var _map_gd = _map['general_data'];
+
+				_map_gd['ground truth'] = full_data['ground truth'];
+				_map_gd['fly'] = full_data['fly'];
+				_map_gd['teleport'] = full_data['teleport'];
+				_map_gd['order'] = full_data['order'];
+				_map_gd['exploration_blobber'] = full_data['exploration_blobber']??true;
+				_map_gd['map general'] = full_data['map general']??'';
+				_map_gd['map size'] = full_data['map size']??get_map_size(maps[map_name]['points_data']);
+
+				_map['points_data'] = terrainer(full_data['points']);
+
+				if (map_name in map_element_overlays) dechanger(map_name);
+				else{
+					var map_overlay = create_new_map_overlay(map_name);
+					map_element_overlays[map_name] = map_overlay;
+					controls.maps_list.appendChild(map_overlay);
+					update_flight(map_name);
+				}
+			});
+		}
+	}
+
+	document.getElementById('rename').onclick = function(){
+		controls.map_name.disabled = false;
+	};
+
+	document.getElementById('save_name').onclick = function(){
+		controls.map_name.disabled = true;
+		rename_map(current_state.map, controls.map_name.value);
+	};
 }
-
-document.getElementById('rename').onclick = function(){
-	controls.map_name.disabled = false;
-};
-
-document.getElementById('save_name').onclick = function(){
-	controls.map_name.disabled = true;
-	rename_map(current_state.map, controls.map_name.value);
-};
