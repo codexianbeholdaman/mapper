@@ -1,7 +1,8 @@
 /**
  * @jest-environment jsdom
  */
-import {main} from '../../src/seminal.js';
+import {Application} from '../../src/seminal.js';
+import 'jsdom-worker';
 
 var full_mock = `
 <!DOCTYPE html>
@@ -9,7 +10,10 @@ var full_mock = `
 <html lang="en">
 	<body>
 		<div id="maps">
-			<div id="adder"></div>
+			<div id="adder">
+				<input id="map_adder_input">
+				<div id="map_adder_button"></div>
+			</div>
 			<div id="maps_list"></div>
 		</div>
 
@@ -61,6 +65,62 @@ var full_mock = `
 </html>
 `;
 
+const click_event = new MouseEvent("click", {
+        view: window,
+        bubbles: true,
+        cancelable: true,
+});
+
+class Document_utils{
+	constructor(doc){
+		this.doc = doc;
+	}
+	add_map(name){
+		var input = this.doc.getElementById('map_adder_input');
+		input.value = name;
+		var adder = this.doc.getElementById('map_adder_button');
+		adder.dispatchEvent(click_event);
+	}
+
+	click_on_id(id){
+		var element = this.doc.getElementById(id);
+		element.dispatchEvent(click_event);
+	}
+
+	click_on_map(name){
+		this.click_on_id(`__map ${name}`);
+	}
+
+	click_on_point(y, x){
+		this.click_on_id(`__sig ${y} ${x}`);
+	}
+
+	press_key(key){
+		this.doc.dispatchEvent(new KeyboardEvent('keydown', {'key': key}));
+	}
+}
+
 test('movement', () => {
 	document.write(full_mock);
+	var _ = new Application();
+
+	var doc = new Document_utils(document);
+	doc.add_map('alpha');
+	doc.click_on_map('alpha');
+
+	doc.click_on_point(7, 5);
+
+	for (var i=7; i<20; i+=1){
+		doc.press_key('ArrowUp');
+	}
+	doc.press_key('ArrowRight');
+	doc.press_key('ArrowUp');
+	doc.press_key('ArrowRight');
+	doc.press_key('ArrowUp');
+	doc.press_key('ArrowRight');
+	doc.press_key('ArrowUp');
+	doc.press_key('ArrowUp');
+	doc.press_key('ArrowUp');
+
+	doc.click_on_id('saver');
 });

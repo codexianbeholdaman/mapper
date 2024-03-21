@@ -589,6 +589,7 @@ export class Application{
 				point._coordinates = {'row':row_nr, 'column':column_nr};
 				point._signature = `${point._coordinates.row} ${point._coordinates.column}`;
 
+				point.id = `__sig ${point._signature}`;
 				points[`${row_nr} ${column_nr}`] = point;
 
 				point._entry = this;
@@ -658,42 +659,44 @@ export class Application{
 	}
 
 	create_map_adder(){
-		var add_map = document.createElement('input');
+		var add_map = this.controls.map_adder_input;
 		assign_style_to_element(add_map, map_element_style);
 		add_map.style['backgroundColor'] = '#008800';
 		add_map.placeholder = 'Map name';
-		this.controls.maps_adder.appendChild(add_map);
 
-		var map_adder = document.createElement('div');
+		var map_adder = this.controls.map_adder_button;
 		assign_style_to_element(map_adder, map_element_style);
 		map_adder.style['backgroundColor'] = '#008800';
 		map_adder.style['display'] = 'inline-block';
 		map_adder.style['width'] = '80px';
 		map_adder.innerHTML = '+';
-		map_adder.onclick = function(){
-			map_name = add_map.value;
 
-			this.maps[map_name] = {}
-			this.maps[map_name]['general_data'] = {}
-			var _map_gd = this.maps[map_name]['general_data']
+		map_adder._entry = this;
+		map_adder.onclick = function(){
+			var base = this._entry;
+			var map_name = add_map.value;
+
+			base.maps[map_name] = {}
+			base.maps[map_name]['general_data'] = {}
+			var _map_gd = base.maps[map_name]['general_data']
 
 			_map_gd['ground truth'] = false;
 			_map_gd['fly'] = "";
 			_map_gd['teleport'] = "";
-			_map_gd['map size'] = [_local_grid_default[0], _local_grid_default[1]]; //TODO: Defaulting
+			_map_gd['map size'] = [base._local_grid_default[0], base._local_grid_default[1]]; //TODO: Defaulting
 			_map_gd['order'] = "";
 			_map_gd['exploration_blobber'] = true;
-			this.maps[map_name]['is_map_changed'] = false;
+			base.maps[map_name]['is_map_changed'] = false;
 
-			var map_overlay = this.create_new_map_overlay(map_name);
-			this.map_element_overlays[map_name] = map_overlay;
+			var map_overlay = base.create_new_map_overlay(map_name);
+			base.map_element_overlays[map_name] = map_overlay;
 
-			this.controls.maps_list.appendChild(map_overlay);
+			map_overlay.id = `__map ${map_name}`;
+			base.controls.maps_list.appendChild(map_overlay);
 
-			this.initialize_map_data(map_name, _local_grid_default);
-			this.change_map(map_name);
+			base.initialize_map_data(map_name, base._local_grid_default);
+			base.change_map(map_name);
 		};
-		this.controls.maps_adder.appendChild(map_adder);
 	}
 
 
@@ -898,7 +901,6 @@ export class Application{
 			'fly': document.getElementById('fly'),
 			'teleport': document.getElementById('teleport'),
 			'maps_list': document.getElementById("maps_list"),
-			'maps_adder': document.getElementById("adder"),
 			'ground_truth': document.getElementById("ground_truth"),
 			'map_general': document.getElementById('map_general'),
 			'terrains':{},
@@ -909,7 +911,10 @@ export class Application{
 			'orderer': document.getElementById('orderer'),
 
 			'blobber': document.getElementById('model_blobber'),
-			'overhead': document.getElementById('model_overhead')
+			'overhead': document.getElementById('model_overhead'),
+
+			'map_adder_input': document.getElementById('map_adder_input'),
+			'map_adder_button': document.getElementById('map_adder_button')
 		}
 
 		this.checkboxes_terrains();
@@ -1072,18 +1077,18 @@ export class Application{
 
 					for (var change of last_changes){
 						if (change[0] == 1){
-							this.points[change[1]].style[`border${dir_to_border[change[2]]}`] = '1px solid black';
-							this.maps[base.current_state.map]['points_data'][change[1]].borders[change[2]] = false;
+							base.points[change[1]].style[`border${dir_to_border[change[2]]}`] = '1px solid black';
+							base.maps[base.current_state.map]['points_data'][change[1]].borders[change[2]] = false;
 						}
 						if (change[0] == 0){
-							this.points[change[1]].style[`backgroundColor`] = 'grey';
-							this.maps[base.current_state.map]['points_data'][change[1]].used = false;
+							base.points[change[1]].style[`backgroundColor`] = 'grey';
+							base.maps[base.current_state.map]['points_data'][change[1]].used = false;
 						}
 					}
 
 					if (base.subsequent_changes.length){
 						var last_state = base.subsequent_changes[base.subsequent_changes.length-1][0];
-						if (last_state.map != base.current_state.map) this.change_map(last_state.map);
+						if (last_state.map != base.current_state.map) base.change_map(last_state.map);
 						base.current_state.direction = last_state.direction;
 						base.current_state.marked = last_state.marked;
 					}
@@ -1102,7 +1107,6 @@ export class Application{
 			this._entry.dechanger();
 			var points_data = [JSON.stringify(this._entry.create_data_dump())];
 			var blob = new Blob(points_data, {type : 'text/plain'}); // the blob
-			//window.open(URL.createObjectURL(blob));
 
 			var _a = document.createElement('a');
 			_a.download = this._entry.current_state.map + '.json';
@@ -1161,7 +1165,7 @@ export class Application{
 		document.getElementById('save_name')._entry = this;
 		document.getElementById('save_name').onclick = function(){
 			this._entry.controls.map_name.disabled = true;
-			rename_map(this._entry.current_state.map, this._entry.controls.map_name.value);
+			this._entry.rename_map(this._entry.current_state.map, this._entry.controls.map_name.value);
 		};
 	}
 }
