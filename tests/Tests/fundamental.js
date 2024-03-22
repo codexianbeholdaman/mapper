@@ -1,10 +1,6 @@
-/**
- * @jest-environment jsdom
- */
-import {Application} from '../../src/seminal.js';
 import * as configs from '../../src/config.js';
 
-var full_mock = `
+export var full_mock = `
 <!DOCTYPE html>
 
 <html lang="en">
@@ -65,13 +61,13 @@ var full_mock = `
 </html>
 `;
 
-const click_event = new MouseEvent("click", {
+export const click_event = new MouseEvent("click", {
         view: window,
         bubbles: true,
         cancelable: true,
 });
 
-class Document_utils{
+export class Document_utils{
 	constructor(doc){
 		this.doc = doc;
 	}
@@ -96,13 +92,12 @@ class Document_utils{
 	}
 
 	press_key(key, element=null){
-		console.log("FINITO");
 		if (!element)
 			this.doc.dispatchEvent(new KeyboardEvent('keydown', {'key': key}));
 	}
 }
 
-class Map_data_parser{
+export class Map_data_parser{
 	constructor(data){
 		this.data = data;
 	}
@@ -116,54 +111,7 @@ class Map_data_parser{
 	}
 }
 
-describe('my test suite', () => {
-	let events = {};
-	// Problem: click activates listener as many times, as there were tests. EventListeners tied to a window: problem
-
-	test('movement', () => {
-		configs._CONFIG_GAME = 'Pool of Radiance';
-		configs._CONFIG_MAX_MAP_SIZE = 16;
-
-		document.write(full_mock);
-		var app = new Application();
-
-		//var doc = new Document_utils(document);
-		//doc.add_map('alpha');
-		//doc.click_on_map('alpha');
-
-		//doc.click_on_point(7, 5);
-
-		//for (var i=7; i<20; i+=1){
-		//	doc.press_key('ArrowUp');
-		//}
-		//doc.press_key('ArrowRight');
-		//doc.press_key('ArrowUp');
-		//doc.press_key('ArrowRight');
-		//doc.press_key('ArrowUp');
-		//doc.press_key('ArrowRight');
-		//doc.press_key('ArrowUp');
-		//doc.press_key('ArrowUp');
-		//doc.press_key('ArrowUp');
-
-		//var data = new Map_data_parser(app.create_data_dump());
-		//expect(data.get_all_usable()).toStrictEqual(new Set(['0 6', '0 5', '1 3', '1 4', '1 5', '1 6', '2 5', '3 5', '4 5', '5 5', '6 5', '7 5']));
-	});
-
-	test('movement 4', () => {
-		document.write(full_mock);
-		var app = new Application();
-
-		var doc = new Document_utils(document);
-		doc.add_map('alpha');
-		doc.click_on_map('alpha');
-
-		doc.click_on_point(7, 5);
-
-		doc.press_key('ArrowUp');
-
-		var data = new Map_data_parser(app.create_data_dump());
-		console.log(data.get_all_usable());
-		//expect(data.get_all_usable()).toStrictEqual(new Set(['0 6', '0 5', '1 3', '1 4', '1 5', '1 6', '2 5', '3 5', '4 5', '5 5', '6 5', '7 5']));
-	});
-});
-
+export function set_configs(){
+	configs._CONFIG_GAME = 'Pool of Radiance';
+	configs._CONFIG_MAX_MAP_SIZE = 16;
+}

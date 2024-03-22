@@ -331,6 +331,7 @@ export class Application{
 	create_new_map_overlay(map_name){
 		var map_overlay = document.createElement('div');
 		var new_map_element = document.createElement('div');
+		new_map_element.id = `__map ${map_name}`;
 
 		var flier = this.create_movement_overlay('F');
 		var teleporter = this.create_movement_overlay('T');
@@ -691,7 +692,6 @@ export class Application{
 			var map_overlay = base.create_new_map_overlay(map_name);
 			base.map_element_overlays[map_name] = map_overlay;
 
-			map_overlay.id = `__map ${map_name}`;
 			base.controls.maps_list.appendChild(map_overlay);
 
 			base.initialize_map_data(map_name, base._local_grid_default);
