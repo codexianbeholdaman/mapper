@@ -49,6 +49,10 @@ export var full_mock = `
 					<input name="map_size" id="map_size"/>
 					<div class="data_type_label">Map data</div>
 				</div>
+
+				<div class="partial_data" id="transforms">
+					<label for="translate" style="font-size:20px">Translate</label> <input name="translate" id="translate" style="width:200px; height:30px; font-size:20px"/>
+				</div>
 			</div>
 		</div>
 
@@ -84,7 +88,8 @@ export class Document_utils{
 	}
 
 	click_on_map(name){
-		this.click_on_id(`__map ${name}`);
+		var element = Array.from(this.doc.getElementsByClassName('__map')).filter(x => x.getElementsByTagName('span')[0].innerHTML == name)[0];
+		element.dispatchEvent(click_event);
 	}
 
 	click_on_point(y, x){
@@ -111,7 +116,7 @@ export class Map_data_parser{
 	}
 }
 
-export function set_configs(){
+export function set_configs(map_size = 16){
 	configs._CONFIG_GAME = 'Pool of Radiance';
 	configs._CONFIG_MAX_MAP_SIZE = 16;
 }

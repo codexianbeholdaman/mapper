@@ -46,6 +46,57 @@ export class Map{
 		return {'used':false, 'borders':[false, false, false, false], 'input':'', 'general':'', 'scripts':'', 'images':'', 'terrains':new Set()};
 	}
 
+	translate(translate_y, translate_x){
+		var new_points = {};
+		var max_y = this.general_data['map size'][0];
+		var max_x = this.general_data['map size'][1];
+
+		for (var point in this.points_data){
+			var [old_y, old_x] = point.split(' ').map(z => Number(z));
+			var new_y = old_y + translate_y;
+			var new_x = old_x + translate_x;
+			if (new_y >= 0 && new_y < max_y && new_x >= 0 && new_x < max_x){
+				new_points[`${new_y} ${new_x}`] = this.points_data[point];
+			}
+		}
+
+		for (var y=Math.min(0, translate_y); y<Math.max(0, translate_y); y+=1){
+			for (var x=0; x<max_x; x+=1){
+				new_points[`${(max_y+y)%max_y} ${x}`] = Map.create_basic_point();
+			}
+		}
+
+		for (var x=Math.min(0, translate_x); x<Math.max(0, translate_x); x+=1){
+			for (var y=0; y<max_y; y+=1){
+				new_points[`${y} ${(max_x+x)%max_x}`] = Map.create_basic_point();
+			}
+		}
+
+		this.points_data = new_points;
+	}
+
+	//TODO: Can be sped up
+	resize_map(new_map_size){
+		var new_x = new_map_size[1], new_y = new_map_size[0];
+		var old_x = this.general_data['map size'][1], old_y = this.general_data['map size'][0];
+
+		var max_x = Math.max(new_x, old_x);
+		var max_y = Math.max(new_y, old_y);
+
+		var min_x = Math.min(new_x, old_x);
+		var min_y = Math.min(new_y, old_y);
+
+		var map_data = this.points_data;
+		for (var y=0; y<max_y; y++){
+			for (var x=0; x<max_x; x++){
+				if (y<min_y && x<min_x) continue;
+				if (x<new_x && y<new_y) map_data[`${y} ${x}`] = Map.create_basic_point();
+				else if (x<old_x && y<old_y) delete map_data[`${y} ${x}`];
+			}
+		}
+		this.general_data['map size'] = new_map_size;
+	}
+
 	//TODO: old version files: change everything... somehow
 	terrainer(points_data){
 		for (var signature in points_data){
@@ -116,6 +167,9 @@ export class Map{
 		else
 			this.construct_from_nothing(proper_data.grid_size);
 	}
+}
+
+class Grid{
 }
 
 export class Application{
@@ -293,27 +347,6 @@ export class Application{
 		}
 	}
 
-
-	//TODO: Can be sped up
-	redefine_map_size(map_data, new_map_size, old_map_size){
-		var new_x = new_map_size[1], new_y = new_map_size[0];
-		var old_x = old_map_size[1], old_y = old_map_size[0];
-
-		var max_x = Math.max(new_x, old_x);
-		var max_y = Math.max(new_y, old_y);
-
-		var min_x = Math.min(new_x, old_x);
-		var min_y = Math.min(new_y, old_y);
-
-		for (var y=0; y<max_y; y++){
-			for (var x=0; x<max_x; x++){
-				if (y<min_y && x<min_x) continue;
-				if (x<new_x && y<new_y) map_data[`${y} ${x}`] = Map.create_basic_point();
-				else if (x<old_x && y<old_y) delete map_data[`${y} ${x}`];
-			}
-		}
-	}
-
 	save_map_data(){
 		this.save_focus(true);
 		var _map_gd = this.maps[this.current_state.map]['general_data'];
@@ -324,10 +357,14 @@ export class Application{
 		_map_gd['exploration_blobber'] = this.controls.blobber.checked;
 
 		var old_map_size = _map_gd['map size'];
-		_map_gd['map size'] = this.controls.map_size.value.split(',').map((x) => Number(x));
+		var new_map_size = this.controls.map_size.value.split(',').map((x) => Number(x));
 
-		if (old_map_size && (old_map_size[0] != _map_gd['map size'][0] || old_map_size[1] != _map_gd['map size'][1]) && this.current_state.map != '_unknown')
-			this.redefine_map_size(this.maps[this.current_state.map]['points_data'], _map_gd['map size'], old_map_size);
+		if (old_map_size && (old_map_size[0] != new_map_size[0] || old_map_size[1] != new_map_size[1]) && this.current_state.map != '_unknown')
+			this.maps[this.current_state.map].resize_map(new_map_size);
+		if (this.controls.translate.value){
+			this.maps[this.current_state.map].translate(...this.controls.translate.value.split(',').map(z => Number(z)));
+			this.controls.translate.value = '';
+		}
 
 		_map_gd['map general'] = this.controls.map_general.value;
 	}
@@ -405,6 +442,7 @@ export class Application{
 		var map_overlay = document.createElement('div');
 		var new_map_element = document.createElement('div');
 		new_map_element.id = `__map ${map_name}`;
+		new_map_element.classList.add(`__map`);
 
 		var flier = this.create_movement_overlay('F');
 		var teleporter = this.create_movement_overlay('T');
@@ -943,11 +981,11 @@ export class Application{
 			'overhead': document.getElementById('model_overhead'),
 
 			'map_adder_input': document.getElementById('map_adder_input'),
-			'map_adder_button': document.getElementById('map_adder_button')
+			'map_adder_button': document.getElementById('map_adder_button'),
+			'translate': document.getElementById('translate')
 		}
 
 		this.checkboxes_terrains();
-
 		this.map_element_overlays = {};
 
 		this.current_state = {
@@ -984,6 +1022,7 @@ export class Application{
 		this.controls.orderer._entry = this;
 		this.controls.orderer.onclick = function(){
 			var base = this._entry;
+			base.maps[base.current_state.map]['general_data'].order = base.controls['order'].value;
 
 			if (base.current_state.map != '_unknown')
 				base.map_element_overlays[base.current_state.map]._element.style.backgroundColor = '#880000';
