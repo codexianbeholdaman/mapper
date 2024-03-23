@@ -41,6 +41,83 @@ const arrow_to_dir = {
 	'ArrowLeft':3
 };
 
+export class Map{
+	static create_basic_point(){
+		return {'used':false, 'borders':[false, false, false, false], 'input':'', 'general':'', 'scripts':'', 'images':'', 'terrains':new Set()};
+	}
+
+	//TODO: old version files: change everything... somehow
+	terrainer(points_data){
+		for (var signature in points_data){
+			if (!('terrains' in points_data[signature])){
+				points_data[signature]['terrains'] = new Set();
+				if ('desert' in points_data[signature] && points_data[signature]['desert']) points_data[signature]['terrains'].add('desert')
+				if ('water' in points_data[signature] && points_data[signature]['water']) points_data[signature]['terrains'].add('water')
+			}
+			else points_data[signature]['terrains'] = new Set(points_data[signature]['terrains']);
+		}
+		return points_data;
+	}
+
+	get_map_size(){
+		var all_points = Object.keys(this.point_data).map((x) => (x.split(' ').map((y) => Number(y))));
+
+		var max_x = 0, max_y = 0;
+		for (var coordinates of all_points){
+			if (coordinates[0] > max_y) max_y = coordinates[0];
+			if (coordinates[1] > max_x) max_x = coordinates[1];
+		}
+		return [max_y+1, max_x+1];
+	}
+
+	initialize_map_data(){
+		var map_size = this.general_data['map size'];
+		this.points_data = {};
+
+		for (var row_nr = 0; row_nr < map_size[0]; row_nr+=1){
+			for (var column_nr = 0; column_nr < map_size[1]; column_nr+=1){
+				this.points_data[`${row_nr} ${column_nr}`] = Map.create_basic_point();
+			}
+		}
+	}
+
+	construct_from_data(full_data){
+		var _map_gd = this.general_data;
+
+		_map_gd['ground truth'] = full_data['ground truth'];
+		_map_gd['fly'] = full_data['fly'];
+		_map_gd['teleport'] = full_data['teleport'];
+		_map_gd['order'] = full_data['order'];
+		_map_gd['exploration_blobber'] = full_data['exploration_blobber']??true;
+		_map_gd['map general'] = full_data['map general']??'';
+		this.points_data = this.terrainer(full_data['points']);
+		_map_gd['map size'] = full_data['map size']??this.get_map_size();
+	}
+
+	construct_from_nothing(grid_size){
+		var _map_gd = this.general_data;
+
+		_map_gd['ground truth'] = false;
+		_map_gd['fly'] = "";
+		_map_gd['teleport'] = "";
+		_map_gd['order'] = "";
+		_map_gd['exploration_blobber'] = true;
+		_map_gd['map size'] = [grid_size[0], grid_size[1]]; //TODO: Defaulting
+	}
+
+	//proper_data fields: title, full_data, local_grid_default (ignored if full_data)
+	constructor(proper_data){
+		this.title = proper_data.map_name;
+		this.is_map_changed = false;
+		this.general_data = {};
+
+		if (proper_data.full_data)
+			this.construct_from_data(proper_data.full_data);
+		else
+			this.construct_from_nothing(proper_data.grid_size);
+	}
+}
+
 export class Application{
 	checkboxes_terrains(){
 		var terrains_div = document.getElementById('terrains');
@@ -58,10 +135,6 @@ export class Application{
 			terrains_div.appendChild(_label);
 			this.controls['terrains'][terrain] = _input;
 		}
-	}
-
-	create_basic_point(){
-		return {'used':false, 'borders':[false, false, false, false], 'input':'', 'general':'', 'scripts':'', 'images':'', 'terrains':new Set()};
 	}
 
 	update_presentation(current_state){
@@ -235,7 +308,7 @@ export class Application{
 		for (var y=0; y<max_y; y++){
 			for (var x=0; x<max_x; x++){
 				if (y<min_y && x<min_x) continue;
-				if (x<new_x && y<new_y) map_data[`${y} ${x}`] = this.create_basic_point();
+				if (x<new_x && y<new_y) map_data[`${y} ${x}`] = Map.create_basic_point();
 				else if (x<old_x && y<old_y) delete map_data[`${y} ${x}`];
 			}
 		}
@@ -244,7 +317,7 @@ export class Application{
 	save_map_data(){
 		this.save_focus(true);
 		var _map_gd = this.maps[this.current_state.map]['general_data'];
-		_map_gd['order'] = this.controls.order.value
+		_map_gd['order'] = this.controls.order.value;
 		_map_gd['ground truth'] = this.controls.ground_truth.checked;
 		_map_gd['fly'] = this.controls.fly.value;
 		_map_gd['teleport'] = this.controls.teleport.value;
@@ -254,7 +327,7 @@ export class Application{
 		_map_gd['map size'] = this.controls.map_size.value.split(',').map((x) => Number(x));
 
 		if (old_map_size && (old_map_size[0] != _map_gd['map size'][0] || old_map_size[1] != _map_gd['map size'][1]) && this.current_state.map != '_unknown')
-			redefine_map_size(this.maps[this.current_state.map]['points_data'], _map_gd['map size'], old_map_size);
+			this.redefine_map_size(this.maps[this.current_state.map]['points_data'], _map_gd['map size'], old_map_size);
 
 		_map_gd['map general'] = this.controls.map_general.value;
 	}
@@ -385,27 +458,6 @@ export class Application{
 		map_overlay._teleporter = teleporter;
 		map_overlay._teleporter._overlay = map_overlay;
 		return map_overlay;
-	}
-
-	initialize_map_data(map_name, grid_size){
-		this.maps[map_name]['points_data'] = {};
-
-		for (var row_nr = 0; row_nr < grid_size[0]; row_nr+=1){
-			for (var column_nr = 0; column_nr < grid_size[1]; column_nr+=1){
-				this.maps[map_name]['points_data'][`${row_nr} ${column_nr}`] = this.create_basic_point();
-			}
-		}
-	}
-
-	get_map_size(points){
-		var all_points = Object.keys(points).map((x) => (x.split(' ').map((y) => Number(y))));
-
-		var max_x = 0, max_y = 0;
-		for (var coordinates of all_points){
-			if (coordinates[0] > max_y) max_y = coordinates[0];
-			if (coordinates[1] > max_x) max_x = coordinates[1];
-		}
-		return [max_y+1, max_x+1];
 	}
 
 	create_data_dump(){
@@ -624,7 +676,7 @@ export class Application{
 					for (var image of base.maps[base.current_state.map]['points_data'][base.current_focus._signature].images.split('\n')){
 						if (image){
 							var pic = document.createElement('img');
-							pic.src = _CONFIG_PREFIX + image;
+							pic.src = '../' + _CONFIG_PREFIX + image;
 							pic.alt = "image should be here";
 							pic.width = "600";
 							point_images.appendChild(pic);
@@ -677,24 +729,14 @@ export class Application{
 			var base = this._entry;
 			var map_name = add_map.value;
 
-			base.maps[map_name] = {}
-			base.maps[map_name]['general_data'] = {}
-			var _map_gd = base.maps[map_name]['general_data']
-
-			_map_gd['ground truth'] = false;
-			_map_gd['fly'] = "";
-			_map_gd['teleport'] = "";
-			_map_gd['map size'] = [base._local_grid_default[0], base._local_grid_default[1]]; //TODO: Defaulting
-			_map_gd['order'] = "";
-			_map_gd['exploration_blobber'] = true;
-			base.maps[map_name]['is_map_changed'] = false;
+			base.maps[map_name] = new Map({'title':map_name, 'grid_size':base._local_grid_default});
 
 			var map_overlay = base.create_new_map_overlay(map_name);
 			base.map_element_overlays[map_name] = map_overlay;
 
 			base.controls.maps_list.appendChild(map_overlay);
 
-			base.initialize_map_data(map_name, base._local_grid_default);
+			base.maps[map_name].initialize_map_data();
 			base.change_map(map_name);
 		};
 	}
@@ -873,19 +915,6 @@ export class Application{
 	}
 
 
-	//TODO: old version files: change everything... somehow
-	terrainer(points_data){
-		for (var signature in points_data){
-			if (!('terrains' in points_data[signature])){
-				points_data[signature]['terrains'] = new Set();
-				if ('desert' in points_data[signature] && points_data[signature]['desert']) points_data[signature]['terrains'].add('desert')
-				if ('water' in points_data[signature] && points_data[signature]['water']) points_data[signature]['terrains'].add('water')
-			}
-			else points_data[signature]['terrains'] = new Set(points_data[signature]['terrains']);
-		}
-		return points_data;
-	}
-
 	constructor(){
 		this.controls = {
 			'map_name': document.getElementById('map_name'),
@@ -929,13 +958,12 @@ export class Application{
 		this.current_focus = null;
 		this.presentation = {};
 
-		this.maps = {};
-		this.maps[this.current_state.map] = {};
-		this.maps[this.current_state.map]['points_data'] = {};
-		this.maps[this.current_state.map]['general_data'] = {};
-
-
 		this.GRID_SIZE = [_CONFIG_MAX_MAP_SIZE, _CONFIG_MAX_MAP_SIZE];
+
+		this.maps = {};
+		this.maps[this.current_state.map] = new Map({'title':'_unknown', 'grid_size': this.GRID_SIZE});
+		this.maps[this.current_state.map].initialize_map_data();
+
 		this._game_config = GAME_DATA[_CONFIG_GAME];
 		this._local_terrains = this._game_config['terrains'];
 
@@ -952,7 +980,6 @@ export class Application{
 		this.create_map_adder();
 		this.points = this.create_grid(this.GRID_SIZE);
 		this.subsequent_changes = [];
-		this.initialize_map_data('_unknown', this.GRID_SIZE);
 
 		this.controls.orderer._entry = this;
 		this.controls.orderer.onclick = function(){
@@ -1129,22 +1156,7 @@ export class Application{
 				var _ = map.text().then(function(result){
 					var full_data = JSON.parse(result);
 					var map_name = full_data['title'];
-					base.maps[map_name] = {};
-					base.maps[map_name]['is_map_changed'] = false;
-
-					var _map = base.maps[map_name];
-					_map['general_data'] = {};
-					var _map_gd = _map['general_data'];
-
-					_map_gd['ground truth'] = full_data['ground truth'];
-					_map_gd['fly'] = full_data['fly'];
-					_map_gd['teleport'] = full_data['teleport'];
-					_map_gd['order'] = full_data['order'];
-					_map_gd['exploration_blobber'] = full_data['exploration_blobber']??true;
-					_map_gd['map general'] = full_data['map general']??'';
-					_map_gd['map size'] = full_data['map size']??get_map_size(base.maps[map_name]['points_data']);
-
-					_map['points_data'] = base.terrainer(full_data['points']);
+					base.maps[map_name] = new Map({'title':map_name, 'full_data':full_data});
 
 					if (map_name in base.map_element_overlays) base.dechanger(map_name);
 					else{
