@@ -1,7 +1,8 @@
 {
-  "name": "my-webpack-project",
+  "name": "mapper",
+  "main": "dist/index.html",
   "version": "1.0.0",
-  "description": "My webpack project",
+  "description": "Automapper for some games",
   "scripts": {
     "test": "jest",
     "build": "webpack --mode=production --node-env=production",

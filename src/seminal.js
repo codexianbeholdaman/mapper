@@ -76,8 +76,8 @@ export class Map{
 	}
 
 	//TODO: Can be sped up
-	resize_map(new_map_size){
-		var new_x = new_map_size[1], new_y = new_map_size[0];
+	resize_map(new_size){
+		var new_x = new_size[1], new_y = new_size[0];
 		var old_x = this.general_data['map size'][1], old_y = this.general_data['map size'][0];
 
 		var max_x = Math.max(new_x, old_x);
@@ -94,7 +94,31 @@ export class Map{
 				else if (x<old_x && y<old_y) delete map_data[`${y} ${x}`];
 			}
 		}
-		this.general_data['map size'] = new_map_size;
+		this.general_data['map size'] = new_size;
+	}
+
+	get_extremities(){
+		var size_x = this.general_data['map size'][1], size_y = this.general_data['map size'][0];
+		var max_x=0, max_y=0, min_y=size_y, min_x=size_x;
+
+		for (var y=0; y<size_y; y++){
+			for (var x=0; x<size_x; x++){
+				var point = this.points_data[`${y} ${x}`];
+				if (point.used == true || point.input != ''){
+					if (x < min_x) min_x = x;
+					if (y < min_y) min_y = y;
+					if (x > max_x) max_x = x;
+					if (y > max_y) max_y = y;
+				}
+			}
+		}
+		return [[min_y, min_x], [max_y, max_x]];
+	}
+
+	cut_map(){
+		var [[y_min, x_min], [y_max, x_max]] = this.get_extremities();
+		this.translate(-y_min, -x_min);
+		this.resize_map([y_max-y_min+1, x_max-x_min+1]);
 	}
 
 	//TODO: old version files: change everything... somehow
@@ -142,7 +166,7 @@ export class Map{
 		_map_gd['exploration_blobber'] = full_data['exploration_blobber']??true;
 		_map_gd['map general'] = full_data['map general']??'';
 		this.points_data = this.terrainer(full_data['points']);
-		_map_gd['map size'] = full_data['map size']??this.get_map_size();
+		_map_gd['map size'] = full_data['map size']??this.get_map_size(); //can be done with get_extremities
 	}
 
 	construct_from_nothing(grid_size){
@@ -166,6 +190,112 @@ export class Map{
 			this.construct_from_data(proper_data.full_data);
 		else
 			this.construct_from_nothing(proper_data.grid_size);
+	}
+}
+
+class Point{
+	constructor(){
+		this.element = document.createElement('div');
+
+		var input_part = document.createElement('div');
+		var arrow_part = document.createElement('div');
+		var marking = document.createElement('div');
+		var teleports = document.createElement('div');
+
+		var north_teleport = document.createElement('div');
+		var south_teleport = document.createElement('div');
+		var west_teleport = document.createElement('div');
+		var east_teleport = document.createElement('div');
+		var mid_teleport = document.createElement('div');
+
+		this.element.appendChild(arrow_part);
+		this.element.appendChild(input_part);
+		this.element.appendChild(marking);
+		this.element.appendChild(teleports);
+
+		teleports._mini_teleports = [north_teleport, east_teleport, south_teleport, west_teleport, mid_teleport];
+		for (var mini_teleport of teleports._mini_teleports){
+			teleports.appendChild(mini_teleport);
+			assign_style_to_element(mini_teleport, mini_teleport_style);
+		}
+		mid_teleport.style.borderRadius = '100%';
+		mid_teleport.style.top = `${single_distance_teleport}px`;
+		mid_teleport.style.left = `${single_distance_teleport}px`;
+
+		var n_left = document.createElement('div');
+		var n_right = document.createElement('div');
+		var s_left = document.createElement('div');
+		var s_right = document.createElement('div');
+		var e_top = document.createElement('div');
+		var e_bottom = document.createElement('div');
+		var w_top = document.createElement('div');
+		var w_bottom = document.createElement('div');
+
+		north_teleport._minors = [n_left, n_right];
+		south_teleport._minors = [s_left, s_right];
+		west_teleport._minors = [w_top, w_bottom];
+		east_teleport._minors = [e_top, e_bottom];
+		for (var mini_teleport of teleports._mini_teleports.slice(0, -1)){
+			for (var minor of mini_teleport._minors){
+				mini_teleport.appendChild(minor);
+			}
+		}
+
+		for (var mini_teleport of [north_teleport, south_teleport]){
+			for (var minor of mini_teleport._minors){
+				assign_style_to_element(minor, mini_teleport_style);
+				minor.style.width = `${single_distance_teleport/2}px`;
+			}
+			mini_teleport._minors[1].style.left = `${single_distance_teleport/2}px`;
+		}
+
+		for (var mini_teleport of [east_teleport, west_teleport]){
+			for (var minor of mini_teleport._minors){
+				assign_style_to_element(minor, mini_teleport_style);
+				minor.style.height = `${single_distance_teleport/2}px`;
+			}
+			mini_teleport._minors[1].style['top'] = `${single_distance_teleport/2}px`;
+		}
+
+		north_teleport.style['left'] = `${single_distance_teleport}px`;
+		south_teleport.style['left'] = `${single_distance_teleport}px`;
+		south_teleport.style['top'] = `${2*single_distance_teleport}px`;
+		west_teleport.style['top'] = `${single_distance_teleport}px`;
+		east_teleport.style['top'] = `${single_distance_teleport}px`;
+		east_teleport.style['left'] = `${2*single_distance_teleport}px`;
+
+		this._arrow = arrow_part;
+		this._input = input_part;
+		this._marking = marking;
+		this._teleports = teleports;
+		this.element.general = this;
+
+		//FIXME later
+		this.element._arrow = arrow_part;
+		this.element._input = input_part;
+		this.element._marking = marking;
+		this.element._teleports = teleports;
+
+		assign_style_to_element(this.element, standard_style);
+		assign_style_to_element(marking, standard_style);
+		assign_style_to_element(marking, marking_style);
+
+		assign_style_to_element(teleports, standard_style);
+		assign_style_to_element(teleports, marking_style);
+		assign_style_to_element(teleports, teleports_style);
+
+		assign_style_to_element(this._arrow, standard_style);
+		assign_style_to_element(this._arrow, arrowy_style);
+		assign_style_to_element(this._input, inputter_style);
+	}
+
+	proper_background(point_data){
+		if (point_data.used) this.element.style['backgroundColor'] = 'white';
+		else this.element.style['backgroundColor'] = 'grey';
+
+		for (var terrain in this._local_terrains){
+			if (point_data['terrains'].has(terrain)) this.element.style.backgroundColor = this._local_terrains[terrain]['color'];
+		}
 	}
 }
 
@@ -218,22 +348,13 @@ export class Application{
 		this.set_changer(map);
 	}
 
-	proper_background(point_data, signature){
-		if (point_data.used) this.points[signature].style['backgroundColor'] = 'white';
-		else this.points[signature].style['backgroundColor'] = 'grey';
-
-		for (var terrain in this._local_terrains){
-			if (point_data['terrains'].has(terrain)) this.points[signature].style.backgroundColor = this._local_terrains[terrain]['color'];
-		}
-	}
-
 	update_field(signature){
 		var to_load = this.maps[this.current_state.map]['points_data'];
 		for (var i=0; i<4; i+=1){
-			if (to_load[signature].borders[i]) this.points[signature].style[`border${dir_to_border[i]}`] = `1px dashed #CCCCCC`;
-			else this.points[signature].style[`border${dir_to_border[i]}`] = '1px solid black';
+			if (to_load[signature].borders[i]) this.points[signature].element.style[`border${dir_to_border[i]}`] = `1px dashed #CCCCCC`;
+			else this.points[signature].element.style[`border${dir_to_border[i]}`] = '1px solid black';
 		}
-		this.proper_background(to_load[signature], signature);
+		this.points[signature].proper_background(to_load[signature]);
 
 		this.points[signature]._input.innerHTML = to_load[signature].input;
 		for (var _ of [0, 1, 2, 3]){
@@ -413,8 +534,10 @@ export class Application{
 	}
 
 	rename_map(old_map_name, new_map_name){
+		if (old_map_name == new_map_name)
+			return;
 		if (this.map_element_overlays[old_map_name]){
-			this.map_element_overlays[old_map_name]._element.innerHTML = new_map_name;
+			this.map_element_overlays[old_map_name]._element.getElementsByTagName('span')[0].innerHTML = new_map_name;
 			this.map_element_overlays[old_map_name]._element._map_name = new_map_name;
 
 			this.maps[new_map_name] = this.maps[old_map_name];
@@ -531,8 +654,8 @@ export class Application{
 			else this.presentation['row_labels'][y].style.display = 'none';
 
 			for (var x=0; x<this.GRID_SIZE[1]; x++){
-				if (x<size_x && y<size_y) this.points[`${y} ${x}`].style.display = 'inline-block';
-				else this.points[`${y} ${x}`].style.display = 'none';
+				if (x<size_x && y<size_y) this.points[`${y} ${x}`].element.style.display = 'inline-block';
+				else this.points[`${y} ${x}`].element.style.display = 'none';
 			}
 		}
 
@@ -591,100 +714,17 @@ export class Application{
 			row.appendChild(row_label);
 
 			for (var column_nr=0; column_nr<grid_size[1]; column_nr+=1){
-				var point = document.createElement('div');
-
-				var input_part = document.createElement('div');
-				var arrow_part = document.createElement('div');
-				var marking = document.createElement('div');
-				var teleports = document.createElement('div');
-
-				var north_teleport = document.createElement('div');
-				var south_teleport = document.createElement('div');
-				var west_teleport = document.createElement('div');
-				var east_teleport = document.createElement('div');
-				var mid_teleport = document.createElement('div');
-
-				point.appendChild(arrow_part);
-				point.appendChild(input_part);
-				point.appendChild(marking);
-				point.appendChild(teleports);
-
-				teleports._mini_teleports = [north_teleport, east_teleport, south_teleport, west_teleport, mid_teleport];
-				for (var mini_teleport of teleports._mini_teleports){
-					teleports.appendChild(mini_teleport);
-					assign_style_to_element(mini_teleport, mini_teleport_style);
-				}
-				mid_teleport.style.borderRadius = '100%';
-				mid_teleport.style.top = `${single_distance_teleport}px`;
-				mid_teleport.style.left = `${single_distance_teleport}px`;
-
-				var n_left = document.createElement('div');
-				var n_right = document.createElement('div');
-				var s_left = document.createElement('div');
-				var s_right = document.createElement('div');
-				var e_top = document.createElement('div');
-				var e_bottom = document.createElement('div');
-				var w_top = document.createElement('div');
-				var w_bottom = document.createElement('div');
-
-				north_teleport._minors = [n_left, n_right];
-				south_teleport._minors = [s_left, s_right];
-				west_teleport._minors = [w_top, w_bottom];
-				east_teleport._minors = [e_top, e_bottom];
-				for (var mini_teleport of teleports._mini_teleports.slice(0, -1)){
-					for (var minor of mini_teleport._minors){
-						mini_teleport.appendChild(minor);
-					}
-				}
-
-				for (var mini_teleport of [north_teleport, south_teleport]){
-					for (var minor of mini_teleport._minors){
-						assign_style_to_element(minor, mini_teleport_style);
-						minor.style.width = `${single_distance_teleport/2}px`;
-					}
-					mini_teleport._minors[1].style.left = `${single_distance_teleport/2}px`;
-				}
-
-				for (var mini_teleport of [east_teleport, west_teleport]){
-					for (var minor of mini_teleport._minors){
-						assign_style_to_element(minor, mini_teleport_style);
-						minor.style.height = `${single_distance_teleport/2}px`;
-					}
-					mini_teleport._minors[1].style['top'] = `${single_distance_teleport/2}px`;
-				}
-
-				north_teleport.style['left'] = `${single_distance_teleport}px`;
-				south_teleport.style['left'] = `${single_distance_teleport}px`;
-				south_teleport.style['top'] = `${2*single_distance_teleport}px`;
-				west_teleport.style['top'] = `${single_distance_teleport}px`;
-				east_teleport.style['top'] = `${single_distance_teleport}px`;
-				east_teleport.style['left'] = `${2*single_distance_teleport}px`;
-
-				point._arrow = arrow_part;
-				point._input = input_part;
-				point._marking = marking;
-				point._teleports = teleports;
-
-				assign_style_to_element(point, standard_style);
-				assign_style_to_element(marking, standard_style);
-				assign_style_to_element(marking, marking_style);
-
-				assign_style_to_element(teleports, standard_style);
-				assign_style_to_element(teleports, marking_style);
-				assign_style_to_element(teleports, teleports_style);
-
-				assign_style_to_element(point._arrow, standard_style);
-				assign_style_to_element(point._arrow, arrowy_style);
-				assign_style_to_element(point._input, inputter_style);
+				var point = new Point();
 
 				point._coordinates = {'row':row_nr, 'column':column_nr};
 				point._signature = `${point._coordinates.row} ${point._coordinates.column}`;
+				point.element._signature = point._signature;
 
-				point.id = `__sig ${point._signature}`;
+				point.element.id = `__sig ${point._signature}`;
+
 				points[`${row_nr} ${column_nr}`] = point;
-
-				point._entry = this;
-				point.addEventListener(_CONFIG_ACCESS_POINT_DATA, function(_event){
+				point.element._entry = this;
+				point.element.addEventListener(_CONFIG_ACCESS_POINT_DATA, function(_event){
 					var base = this._entry;
 					if (_CONFIG_ACCESS_POINT_DATA == 'contextmenu') _event.preventDefault();
 					point_images.innerHTML = '';
@@ -722,7 +762,7 @@ export class Application{
 					}
 				});
 
-				point.addEventListener('click', function(){
+				point.element.addEventListener('click', function(){
 					var base = this._entry;
 					if (base.controls.ground_truth.checked && !base.maps[base.current_state.map]['points_data'][this._signature].used) return;
 					if (base.current_state.marked) base.current_state.marked._arrow.innerHTML = '';
@@ -730,20 +770,20 @@ export class Application{
 					base.current_state.direction = 0;
 					this._arrow.innerHTML = dir_to_arrow[base.current_state.direction];
 
-					base.current_state.marked = this;
+					base.current_state.marked = this.general;
 
 					var data_to_push = [];
 					if (!base.maps[base.current_state.map]['points_data'][this._signature].used){
 						if (base.map_element_overlays[base.current_state.map]) base.changer();
 						base.maps[base.current_state.map]['points_data'][this._signature].used = true;
-						base.proper_background(base.maps[base.current_state.map]['points_data'][this._signature], this._signature);
+						base.points[this._signature].proper_background(base.maps[base.current_state.map]['points_data'][this._signature]);
 						data_to_push.push([0, this._signature]);
 					}
 					base.subsequent_changes.push([Object.assign({}, base.current_state), data_to_push]);
 					base.update_presentation(base.current_state);
 				});
 
-				row.appendChild(point);
+				row.appendChild(point.element);
 			}
 		}
 		return points;
@@ -837,16 +877,16 @@ export class Application{
 		if (!new_place_data.used){
 			new_place_data.used = true;
 			changes.push([0, end]);
-			new_place_presentation.style['backgroundColor'] = 'white';
+			new_place_presentation.element.style['backgroundColor'] = 'white';
 			if (this.current_focus && this.current_focus._signature == end) this.controls.input_used.checked = true;
 		}
 		if (start && !this.maps[this.current_state.map]['points_data'][start].borders[direction]){
-			this.current_state.marked.style[`border${dir_to_border[direction]}`] = `1px dashed #CCCCCC`;
+			this.current_state.marked.element.style[`border${dir_to_border[direction]}`] = `1px dashed #CCCCCC`;
 			this.maps[this.current_state.map]['points_data'][start].borders[direction] = true;
 			changes.push([1, start, direction]);
 			if (this.current_focus && this.current_focus._signature == start) this.controls.input_borders[direction].checked = true;
 
-			new_place_presentation.style[`border${dir_to_border[(direction+2)%4]}`] = `1px dashed #CCCCCC`;
+			new_place_presentation.element.style[`border${dir_to_border[(direction+2)%4]}`] = `1px dashed #CCCCCC`;
 			new_place_data.borders[(direction+2)%4] = true;
 			changes.push([1, end, (direction+2)%4]);
 			if (this.current_focus && this.current_focus._signature == end) this.controls.input_borders[(direction+2)%4].checked = true;
@@ -929,7 +969,6 @@ export class Application{
 		}
 
 		var new_place_signature = this.move_in_direction(this.current_state.marked._signature, direction_proper);
-		var new_place_presentation = this.points[new_place_signature];
 		var new_place_data = this.maps[this.current_state.map]['points_data'][new_place_signature];
 
 		if (new_place_data && (!this.controls.ground_truth.checked || (new_place_data.used && this.maps[this.current_state.map]['points_data'][this.current_state.marked._signature].borders[direction_proper]))){
@@ -951,7 +990,6 @@ export class Application{
 		}
 		return changes_introduced;
 	}
-
 
 	constructor(){
 		this.controls = {
@@ -982,7 +1020,8 @@ export class Application{
 
 			'map_adder_input': document.getElementById('map_adder_input'),
 			'map_adder_button': document.getElementById('map_adder_button'),
-			'translate': document.getElementById('translate')
+			'translate': document.getElementById('translate'),
+			'cutter': document.getElementById('cutter')
 		}
 
 		this.checkboxes_terrains();
@@ -1117,7 +1156,7 @@ export class Application{
 					if (this.maps[base.current_state.map]['points_data'][base.current_state.marked._signature]['terrains'].has(terrain)) 
 						this.maps[base.current_state.map]['points_data'][base.current_state.marked._signature]['terrains'].delete(terrain);
 					else this.maps[base.current_state.map]['points_data'][base.current_state.marked._signature]['terrains'].add(terrain);
-					this.proper_background(this.maps[base.current_state.map]['points_data'][base.current_state.marked._signature], base.current_state.marked._signature);
+					this.points[base.current_state.marked._signature].proper_background(this.maps[base.current_state.map]['points_data'][base.current_state.marked._signature], );
 					this.changer();
 					return;
 				}
@@ -1217,6 +1256,13 @@ export class Application{
 		document.getElementById('save_name').onclick = function(){
 			this._entry.controls.map_name.disabled = true;
 			this._entry.rename_map(this._entry.current_state.map, this._entry.controls.map_name.value);
+		};
+
+		document.getElementById('cutter')._entry = this;
+		document.getElementById('cutter').onclick = function(){
+			var map = this._entry.maps[this._entry.current_state.map];
+			map.cut_map();
+			this._entry.controls.map_size.value = `${map.general_data['map size'][0]},${map.general_data['map size'][1]}`;
 		};
 	}
 }

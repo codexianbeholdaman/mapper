@@ -53,6 +53,7 @@ export var full_mock = `
 				<div class="partial_data" id="transforms">
 					<label for="translate" style="font-size:20px">Translate</label> <input name="translate" id="translate" style="width:200px; height:30px; font-size:20px"/>
 				</div>
+				<div id="cutter"></div>
 			</div>
 		</div>
 
@@ -80,6 +81,15 @@ export class Document_utils{
 		input.value = name;
 		var adder = this.doc.getElementById('map_adder_button');
 		adder.dispatchEvent(click_event);
+	}
+	rename_map(new_name){
+		var rename_button = this.doc.getElementById('rename');
+		rename_button.dispatchEvent(click_event);
+		var map_name = this.doc.getElementById('map_name');
+		map_name.value = new_name;
+
+		var save_button = this.doc.getElementById('save_name');
+		save_button.dispatchEvent(click_event);
 	}
 
 	click_on_id(id){
