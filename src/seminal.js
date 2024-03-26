@@ -289,6 +289,7 @@ class Point{
 		assign_style_to_element(this._input, inputter_style);
 	}
 
+	//TODO: FIXME: THIS2
 	proper_background(point_data){
 		if (point_data.used) this.element.style['backgroundColor'] = 'white';
 		else this.element.style['backgroundColor'] = 'grey';
@@ -296,6 +297,10 @@ class Point{
 		for (var terrain in this._local_terrains){
 			if (point_data['terrains'].has(terrain)) this.element.style.backgroundColor = this._local_terrains[terrain]['color'];
 		}
+	}
+
+	clear_pointer(){
+		this._arrow.innerHTML = '';
 	}
 }
 
@@ -348,6 +353,7 @@ export class Application{
 		this.set_changer(map);
 	}
 
+	//TODO: to point; overkill sometimes ('y' for example)
 	update_field(signature){
 		var to_load = this.maps[this.current_state.map]['points_data'];
 		for (var i=0; i<4; i+=1){
@@ -490,7 +496,8 @@ export class Application{
 		_map_gd['map general'] = this.controls.map_general.value;
 	}
 
-	load_map_presentation(to_load, map_name){
+	load_map_presentation(map_name){
+		var to_load = this.maps[map_name]['points_data'];
 		this.current_state['map'] = map_name;
 		this.resize_grid(this.maps[map_name]['general_data']['map size']);
 
@@ -509,7 +516,7 @@ export class Application{
 		for (var coordinates in to_load) this.update_field(coordinates);
 
 		if (this.current_state['marked']){
-			this.current_state['marked']._arrow.innerHTML = "";
+			this.current_state['marked'].clear_pointer();
 			this.current_state.marked = null;
 			this.current_state.direction = -1;
 		}
@@ -529,7 +536,7 @@ export class Application{
 		this.update_flight(this.current_state.map);
 
 		this.current_state['map'] = new_map;
-		this.load_map_presentation(this.maps[new_map]['points_data'], new_map);
+		this.load_map_presentation(new_map);
 		this.controls.map_name.value = new_map;
 	}
 
@@ -765,7 +772,7 @@ export class Application{
 				point.element.addEventListener('click', function(){
 					var base = this._entry;
 					if (base.controls.ground_truth.checked && !base.maps[base.current_state.map]['points_data'][this._signature].used) return;
-					if (base.current_state.marked) base.current_state.marked._arrow.innerHTML = '';
+					if (base.current_state.marked) base.current_state.marked.clear_pointer();
 					
 					base.current_state.direction = 0;
 					this._arrow.innerHTML = dir_to_arrow[base.current_state.direction];
@@ -824,7 +831,7 @@ export class Application{
 		if (this.current_state.map != new_state.map) this.change_map(new_state.map);
 		if ('direction' in new_state) this.current_state.direction = new_state.direction;
 
-		if (this.current_state.marked) this.current_state.marked._arrow.innerHTML = '';
+		if (this.current_state.marked) this.current_state.marked.clear_pointer();
 		this.current_state.marked = this.points[new_state.signature];
 		this.update_presentation(this.current_state);
 	}
@@ -1024,6 +1031,8 @@ export class Application{
 			'cutter': document.getElementById('cutter')
 		}
 
+		this._game_config = GAME_DATA[_CONFIG_GAME];
+		this._local_terrains = this._game_config['terrains'];
 		this.checkboxes_terrains();
 		this.map_element_overlays = {};
 
@@ -1041,8 +1050,6 @@ export class Application{
 		this.maps[this.current_state.map] = new Map({'title':'_unknown', 'grid_size': this.GRID_SIZE});
 		this.maps[this.current_state.map].initialize_map_data();
 
-		this._game_config = GAME_DATA[_CONFIG_GAME];
-		this._local_terrains = this._game_config['terrains'];
 
 		this.ascending_y = false;
 		this.revert = false;
@@ -1123,14 +1130,20 @@ export class Application{
 			}
 
 			if (e.key == 'y'){
-				if (this.maps[base.current_state.map]['points_data'][base.current_state.marked._signature]['scripts']){
-					var partial_scripts = this.maps[base.current_state.map]['points_data'][base.current_state.marked._signature]['scripts'].split('\n');
+				if (base.maps[base.current_state.map]['points_data'][base.current_state.marked._signature]['scripts']){
+					var partial_scripts = base.maps[base.current_state.map]['points_data'][base.current_state.marked._signature]['scripts'].split('\n');
 					for (var script of partial_scripts){
 						var proper_script = script.split(';');
 
 						if (proper_script[0] == 'P' && proper_script[1].includes(dir_to_cardinal[direction_int])){
 							base.enforce_new_state(base.create_next_state(proper_script[2], proper_script[3], proper_script[4]??base.current_state.direction));
-							base.subsequent_changes.push([Object.assign({}, base.current_state), []]);
+							var changed = [];
+							if (!base.maps[base.current_state.map].points_data[base.current_state.marked._signature].used){
+								base.maps[base.current_state.map].points_data[base.current_state.marked._signature].used = true;
+								changed = [[0, base.current_state.marked._signature]];
+							}
+							base.subsequent_changes.push([Object.assign({}, base.current_state), changed]);
+							base.update_field(base.current_state.marked._signature); //FIXME
 						}
 
 						if (proper_script[0] == 'R' && proper_script[1] == dir_to_cardinal[direction_int]){
@@ -1176,17 +1189,17 @@ export class Application{
 			if (e.key == 'Backspace'){
 				if (document.activeElement.tagName == 'INPUT') ;
 				else if (base.subsequent_changes){
-					base.current_state.marked._arrow.innerHTML = '';
+					base.current_state.marked.clear_pointer();
 					var dead_state, last_changes;
 					[dead_state, last_changes] = base.subsequent_changes.pop();
 
 					for (var change of last_changes){
 						if (change[0] == 1){
-							base.points[change[1]].style[`border${dir_to_border[change[2]]}`] = '1px solid black';
+							base.points[change[1]].element.style[`border${dir_to_border[change[2]]}`] = '1px solid black';
 							base.maps[base.current_state.map]['points_data'][change[1]].borders[change[2]] = false;
 						}
 						if (change[0] == 0){
-							base.points[change[1]].style[`backgroundColor`] = 'grey';
+							base.points[change[1]].element.style[`backgroundColor`] = 'grey';
 							base.maps[base.current_state.map]['points_data'][change[1]].used = false;
 						}
 					}
@@ -1260,9 +1273,12 @@ export class Application{
 
 		document.getElementById('cutter')._entry = this;
 		document.getElementById('cutter').onclick = function(){
+			this._entry.save_focus();
+			this._entry.current_focus = null;
 			var map = this._entry.maps[this._entry.current_state.map];
 			map.cut_map();
 			this._entry.controls.map_size.value = `${map.general_data['map size'][0]},${map.general_data['map size'][1]}`;
+			this._entry.change_map(this._entry.current_state.map);
 		};
 	}
 }

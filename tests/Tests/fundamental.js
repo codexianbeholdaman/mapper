@@ -71,6 +71,11 @@ export const click_event = new MouseEvent("click", {
         bubbles: true,
         cancelable: true,
 });
+export const auxclick_event = new MouseEvent("auxclick", {
+        view: window,
+        bubbles: true,
+        cancelable: true,
+});
 
 export class Document_utils{
 	constructor(doc){
@@ -92,6 +97,10 @@ export class Document_utils{
 		save_button.dispatchEvent(click_event);
 	}
 
+	static get_point(y, x){
+		return `__sig ${y} ${x}`;
+	}
+
 	click_on_id(id){
 		var element = this.doc.getElementById(id);
 		element.dispatchEvent(click_event);
@@ -103,7 +112,12 @@ export class Document_utils{
 	}
 
 	click_on_point(y, x){
-		this.click_on_id(`__sig ${y} ${x}`);
+		this.click_on_id(Document_utils.get_point(y, x));
+	}
+
+	auxclick_on_point(y, x){
+		var element = this.doc.getElementById(Document_utils.get_point(y, x));
+		element.dispatchEvent(auxclick_event);
 	}
 
 	press_key(key, element=null){

@@ -53,5 +53,12 @@ export var GAME_DATA = {
 		'default map size':[16, 16],
 		'y_order':'ascending',
 		'backspace':'revert'
+	},
+	'Secret of the Silver Blades':{
+		'terrains':{
+		},
+		'default map size':[16, 16],
+		'y_order':'ascending',
+		'backspace':'revert'
 	}
 }
