@@ -25,8 +25,7 @@ test('backspacing', () => {
 	doc.press_key('ArrowUp');
 	doc.press_key('y');
 
-	doc.press_key('ArrowUp');
-	doc.press_key('ArrowUp');
+	doc.chain_directions('UU');
 
 	doc.auxclick_on_point(4, 1);
 	document.getElementById('scripts_text').value = 'P;N;alpha;10 8';
@@ -47,9 +46,7 @@ test('backspacing', () => {
 	doc.press_key('Backspace');
 	doc.press_key('Backspace');
 	doc.press_key('Backspace');
-	doc.press_key('ArrowRight');
-	doc.press_key('ArrowUp');
-	doc.press_key('ArrowUp');
+	doc.chain_directions('RUU');
 
 	var data_beta_end = new Map_data_parser(app.create_data_dump());
 	expect(data_beta_end.get_all_usable()).toStrictEqual(new Set(['7 1', '6 1', '5 1', '4 1', '4 2', '4 3']));

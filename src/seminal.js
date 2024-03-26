@@ -193,8 +193,10 @@ export class Map{
 	}
 }
 
+//Point as presented within a grid
 class Point{
-	constructor(){
+	//Terrains data, point data, ground_truth should be the only things taken from the base!
+	constructor(application){
 		this.element = document.createElement('div');
 
 		var input_part = document.createElement('div');
@@ -270,12 +272,6 @@ class Point{
 		this._teleports = teleports;
 		this.element.general = this;
 
-		//FIXME later
-		this.element._arrow = arrow_part;
-		this.element._input = input_part;
-		this.element._marking = marking;
-		this.element._teleports = teleports;
-
 		assign_style_to_element(this.element, standard_style);
 		assign_style_to_element(marking, standard_style);
 		assign_style_to_element(marking, marking_style);
@@ -287,20 +283,154 @@ class Point{
 		assign_style_to_element(this._arrow, standard_style);
 		assign_style_to_element(this._arrow, arrowy_style);
 		assign_style_to_element(this._input, inputter_style);
+		this.base = application;
+
+		this.element.addEventListener('click', function(){
+			var base = this._entry;
+			if (base.controls.ground_truth.checked && !base.maps[base.current_state.map]['points_data'][this._signature].used) return;
+			if (base.current_state.marked) base.current_state.marked.clear_pointer();
+			
+			base.current_state.direction = 0;
+			this.general._arrow.innerHTML = dir_to_arrow[base.current_state.direction];
+
+			base.current_state.marked = this.general;
+
+			var data_to_push = [];
+			if (!base.maps[base.current_state.map]['points_data'][this._signature].used){
+				if (base.map_element_overlays[base.current_state.map]) base.changer();
+				base.maps[base.current_state.map]['points_data'][this._signature].used = true;
+				base.points[this._signature].proper_background();
+				data_to_push.push([0, this._signature]);
+			}
+			base.subsequent_changes.push([Object.assign({}, base.current_state), data_to_push]);
+			base.update_presentation(base.current_state);
+		});
+
+		this.element.addEventListener(_CONFIG_ACCESS_POINT_DATA, function(_event){
+			var base = this._entry;
+			if (_CONFIG_ACCESS_POINT_DATA == 'contextmenu') _event.preventDefault();
+			point_images.innerHTML = '';
+			if (base.current_focus){
+				base.current_focus._marking.style.background = 'rgba(0, 0, 0, 0)';
+				base.save_focus();
+				base.current_focus._input.innerHTML = shorthand_text.value;
+			}
+
+			base.current_focus = this.general;
+			base.current_focus._marking.style.background = 'linear-gradient(to right bottom, #AA0000 50%, rgba(0, 0, 0, 0) 50%)';
+			base.controls.images_text.value = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].images;
+			base.controls.scripts_text.value = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].scripts;
+			base.controls.shorthand_text.value = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].input;
+			base.controls.general_text.value = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].general;
+
+			for (var terrain in base._local_terrains){
+				if (base.maps[base.current_state.map]['points_data'][base.current_focus._signature]['terrains'].has(terrain)) base.controls['terrains'][terrain].checked = true;
+				else base.controls['terrains'][terrain].checked = false;
+			}
+
+			base.controls.input_used.checked = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].used;
+			var ordering = ['N', 'E', 'S', 'W'];
+			for (var index of [0, 1, 2, 3]){
+				base.controls.input_borders[index].checked = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].borders[cardinal_to_dir[ordering[index]]];
+			}
+			for (var image of base.maps[base.current_state.map]['points_data'][base.current_focus._signature].images.split('\n')){
+				if (image){
+					var pic = document.createElement('img');
+					pic.src = '../' + _CONFIG_PREFIX + image;
+					pic.alt = "image should be here";
+					pic.width = "600";
+					point_images.appendChild(pic);
+				}
+			}
+		});
 	}
 
-	//TODO: FIXME: THIS2
-	proper_background(point_data){
+	fix_coordinates(row_nr, column_nr){
+		this._coordinates = {'row':row_nr, 'column':column_nr};
+		this._signature = `${this._coordinates.row} ${this._coordinates.column}`;
+		this.element._signature = this._signature;
+		this.element.id = `__sig ${this._signature}`;
+	}
+
+	proper_background(){
+		var point_data = this.base.maps[this.base.current_state.map]['points_data'][this._signature];
 		if (point_data.used) this.element.style['backgroundColor'] = 'white';
 		else this.element.style['backgroundColor'] = 'grey';
 
-		for (var terrain in this._local_terrains){
-			if (point_data['terrains'].has(terrain)) this.element.style.backgroundColor = this._local_terrains[terrain]['color'];
+		//should work after refactor - check
+		if (point_data['terrains'].length > 0){
+			const [terrain] = point_data['terrains'];
+			this.element.style.backgroundColor = this.base._local_terrains[terrain]['color'];
 		}
+
+		//for (var terrain in this.base._local_terrains){
+		//	if (point_data['terrains'].has(terrain)) this.element.style.backgroundColor = this.base._local_terrains[terrain]['color'];
+		//}
 	}
 
 	clear_pointer(){
 		this._arrow.innerHTML = '';
+	}
+
+	update_teleports(){
+		var to_load = this.base.maps[this.base.current_state.map]['points_data'][this._signature];
+
+		for (var _ of [0, 1, 2, 3]){
+			for (var minor in [0, 1]){
+				this._teleports._mini_teleports[_]._minors[minor].style.background = 'rgba(0, 0, 0, 0)';
+			}
+		}
+		this._teleports._mini_teleports[4].style.background = 'rgba(0, 0, 0, 0)';
+		if (to_load.scripts){
+			var scripts = to_load.scripts.split('\n');
+			for (var script of scripts){
+				if (script == 'undefined') continue;
+				var proper_script = script.split(';');
+				var color = '#AA0000'; //For W, WS
+				if (proper_script[0] == 'P') color = '#008055';
+				if (proper_script[0] == 'R') color = '#9900E6';
+
+				var direction = proper_script[1];
+				var base_teleport = this._teleports;
+				if ((direction && direction.includes('N')) || proper_script[0] == 'T'){
+					var mini_teleports = base_teleport._mini_teleports[cardinal_to_dir['N']];
+					mini_teleports._minors[0].style.background = `linear-gradient(to right bottom, rgba(0, 0, 0, 0) 50%, ${color} 50%)`;
+					mini_teleports._minors[1].style.background = `linear-gradient(to right top, ${color} 50%, rgba(0, 0, 0, 0) 50%)`;
+				}
+
+				if ((direction && direction.includes('S')) || proper_script[0] == 'T'){
+					var mini_teleports = base_teleport._mini_teleports[cardinal_to_dir['S']];
+					mini_teleports._minors[0].style.background = `linear-gradient(to right top, rgba(0, 0, 0, 0) 50%, ${color} 50%)`;
+					mini_teleports._minors[1].style.background = `linear-gradient(to right bottom, ${color} 50%, rgba(0, 0, 0, 0) 50%)`;
+				}
+
+				if ((direction && direction.includes('W')) || proper_script[0] == 'T'){
+					var mini_teleports = base_teleport._mini_teleports[cardinal_to_dir['W']];
+					mini_teleports._minors[0].style.background = `linear-gradient(to right bottom, rgba(0, 0, 0, 0) 50%, ${color} 50%)`;
+					mini_teleports._minors[1].style.background = `linear-gradient(to right top, rgba(0, 0, 0, 0) 50%, ${color} 50%)`;
+				}
+				if ((direction && direction.includes('E')) || proper_script[0] == 'T'){
+					var mini_teleports = base_teleport._mini_teleports[cardinal_to_dir['E']];
+					mini_teleports._minors[0].style.background = `linear-gradient(to right top, ${color} 50%, rgba(0, 0, 0, 0) 50%)`;
+					mini_teleports._minors[1].style.background = `linear-gradient(to right bottom, ${color} 50%, rgba(0, 0, 0, 0) 50%)`;
+				}
+				if (proper_script[0] == 'R' || proper_script[0] == 'T') this._teleports._mini_teleports[4].style.background = color;
+			}
+		}
+	}
+
+	//TODO: to point; overkill sometimes ('y' for example)
+	update_field(){
+		var to_load = this.base.maps[this.base.current_state.map]['points_data'][this._signature];
+
+		for (var i=0; i<4; i+=1){
+			if (to_load.borders[i]) this.element.style[`border${dir_to_border[i]}`] = `1px dashed #CCCCCC`;
+			else this.element.style[`border${dir_to_border[i]}`] = '1px solid black';
+		}
+		this.proper_background();
+
+		this._input.innerHTML = to_load.input;
+		this.update_teleports();
 	}
 }
 
@@ -353,59 +483,6 @@ export class Application{
 		this.set_changer(map);
 	}
 
-	//TODO: to point; overkill sometimes ('y' for example)
-	update_field(signature){
-		var to_load = this.maps[this.current_state.map]['points_data'];
-		for (var i=0; i<4; i+=1){
-			if (to_load[signature].borders[i]) this.points[signature].element.style[`border${dir_to_border[i]}`] = `1px dashed #CCCCCC`;
-			else this.points[signature].element.style[`border${dir_to_border[i]}`] = '1px solid black';
-		}
-		this.points[signature].proper_background(to_load[signature]);
-
-		this.points[signature]._input.innerHTML = to_load[signature].input;
-		for (var _ of [0, 1, 2, 3]){
-			for (var minor in [0, 1]){
-				this.points[signature]._teleports._mini_teleports[_]._minors[minor].style.background = 'rgba(0, 0, 0, 0)';
-			}
-		}
-		this.points[signature]._teleports._mini_teleports[4].style.background = 'rgba(0, 0, 0, 0)';
-		if (to_load[signature].scripts){
-			var scripts = to_load[signature].scripts.split('\n');
-			for (var script of scripts){
-				if (script == 'undefined') continue;
-				var proper_script = script.split(';');
-				var color = '#AA0000'; //For W, WS
-				if (proper_script[0] == 'P') color = '#008055';
-				if (proper_script[0] == 'R') color = '#9900E6';
-
-				var direction = proper_script[1];
-				var base_teleport = this.points[signature]._teleports;
-				if ((direction && direction.includes('N')) || proper_script[0] == 'T'){
-					var mini_teleports = base_teleport._mini_teleports[cardinal_to_dir['N']];
-					mini_teleports._minors[0].style.background = `linear-gradient(to right bottom, rgba(0, 0, 0, 0) 50%, ${color} 50%)`;
-					mini_teleports._minors[1].style.background = `linear-gradient(to right top, ${color} 50%, rgba(0, 0, 0, 0) 50%)`;
-				}
-
-				if ((direction && direction.includes('S')) || proper_script[0] == 'T'){
-					var mini_teleports = base_teleport._mini_teleports[cardinal_to_dir['S']];
-					mini_teleports._minors[0].style.background = `linear-gradient(to right top, rgba(0, 0, 0, 0) 50%, ${color} 50%)`;
-					mini_teleports._minors[1].style.background = `linear-gradient(to right bottom, ${color} 50%, rgba(0, 0, 0, 0) 50%)`;
-				}
-
-				if ((direction && direction.includes('W')) || proper_script[0] == 'T'){
-					var mini_teleports = base_teleport._mini_teleports[cardinal_to_dir['W']];
-					mini_teleports._minors[0].style.background = `linear-gradient(to right bottom, rgba(0, 0, 0, 0) 50%, ${color} 50%)`;
-					mini_teleports._minors[1].style.background = `linear-gradient(to right top, rgba(0, 0, 0, 0) 50%, ${color} 50%)`;
-				}
-				if ((direction && direction.includes('E')) || proper_script[0] == 'T'){
-					var mini_teleports = base_teleport._mini_teleports[cardinal_to_dir['E']];
-					mini_teleports._minors[0].style.background = `linear-gradient(to right top, ${color} 50%, rgba(0, 0, 0, 0) 50%)`;
-					mini_teleports._minors[1].style.background = `linear-gradient(to right bottom, ${color} 50%, rgba(0, 0, 0, 0) 50%)`;
-				}
-				if (proper_script[0] == 'R' || proper_script[0] == 'T') this.points[signature]._teleports._mini_teleports[4].style.background = color;
-			}
-		}
-	}
 
 	update_part(map_name, movement, element){
 		var _map_gd = this.maps[map_name]['general_data'];
@@ -470,7 +547,7 @@ export class Application{
 			if (Object.entries(this.maps[this.current_state.map]['points_data'][coordinate]).sort().toString() !== Object.entries(past_point).sort().toString())
 				this.changer();
 
-			if (!map_switch) this.update_field(coordinate);
+			if (!map_switch) this.points[coordinate].update_field();
 		}
 	}
 
@@ -513,7 +590,7 @@ export class Application{
 		this.controls.map_general.value = _map_gd['map general']??'';
 		this.controls.order.value = _map_gd['order']??'';
 
-		for (var coordinates in to_load) this.update_field(coordinates);
+		for (var coordinates in to_load) this.points[coordinates].update_field();
 
 		if (this.current_state['marked']){
 			this.current_state['marked'].clear_pointer();
@@ -721,74 +798,11 @@ export class Application{
 			row.appendChild(row_label);
 
 			for (var column_nr=0; column_nr<grid_size[1]; column_nr+=1){
-				var point = new Point();
-
-				point._coordinates = {'row':row_nr, 'column':column_nr};
-				point._signature = `${point._coordinates.row} ${point._coordinates.column}`;
-				point.element._signature = point._signature;
-
-				point.element.id = `__sig ${point._signature}`;
-
+				var point = new Point(this);
+				point.fix_coordinates(row_nr, column_nr);
 				points[`${row_nr} ${column_nr}`] = point;
+
 				point.element._entry = this;
-				point.element.addEventListener(_CONFIG_ACCESS_POINT_DATA, function(_event){
-					var base = this._entry;
-					if (_CONFIG_ACCESS_POINT_DATA == 'contextmenu') _event.preventDefault();
-					point_images.innerHTML = '';
-					if (base.current_focus){
-						base.current_focus._marking.style.background = 'rgba(0, 0, 0, 0)';
-						base.save_focus();
-						base.current_focus._input.innerHTML = shorthand_text.value;
-					}
-
-					base.current_focus = this;
-					base.current_focus._marking.style.background = 'linear-gradient(to right bottom, #AA0000 50%, rgba(0, 0, 0, 0) 50%)';
-					base.controls.images_text.value = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].images;
-					base.controls.scripts_text.value = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].scripts;
-					base.controls.shorthand_text.value = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].input;
-					base.controls.general_text.value = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].general;
-
-					for (var terrain in base._local_terrains){
-						if (base.maps[base.current_state.map]['points_data'][base.current_focus._signature]['terrains'].has(terrain)) base.controls['terrains'][terrain].checked = true;
-						else base.controls['terrains'][terrain].checked = false;
-					}
-
-					base.controls.input_used.checked = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].used;
-					var ordering = ['N', 'E', 'S', 'W'];
-					for (var index of [0, 1, 2, 3]){
-						base.controls.input_borders[index].checked = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].borders[cardinal_to_dir[ordering[index]]];
-					}
-					for (var image of base.maps[base.current_state.map]['points_data'][base.current_focus._signature].images.split('\n')){
-						if (image){
-							var pic = document.createElement('img');
-							pic.src = '../' + _CONFIG_PREFIX + image;
-							pic.alt = "image should be here";
-							pic.width = "600";
-							point_images.appendChild(pic);
-						}
-					}
-				});
-
-				point.element.addEventListener('click', function(){
-					var base = this._entry;
-					if (base.controls.ground_truth.checked && !base.maps[base.current_state.map]['points_data'][this._signature].used) return;
-					if (base.current_state.marked) base.current_state.marked.clear_pointer();
-					
-					base.current_state.direction = 0;
-					this._arrow.innerHTML = dir_to_arrow[base.current_state.direction];
-
-					base.current_state.marked = this.general;
-
-					var data_to_push = [];
-					if (!base.maps[base.current_state.map]['points_data'][this._signature].used){
-						if (base.map_element_overlays[base.current_state.map]) base.changer();
-						base.maps[base.current_state.map]['points_data'][this._signature].used = true;
-						base.points[this._signature].proper_background(base.maps[base.current_state.map]['points_data'][this._signature]);
-						data_to_push.push([0, this._signature]);
-					}
-					base.subsequent_changes.push([Object.assign({}, base.current_state), data_to_push]);
-					base.update_presentation(base.current_state);
-				});
 
 				row.appendChild(point.element);
 			}
@@ -825,7 +839,6 @@ export class Application{
 			base.change_map(map_name);
 		};
 	}
-
 
 	enforce_new_state(new_state){
 		if (this.current_state.map != new_state.map) this.change_map(new_state.map);
@@ -1143,7 +1156,7 @@ export class Application{
 								changed = [[0, base.current_state.marked._signature]];
 							}
 							base.subsequent_changes.push([Object.assign({}, base.current_state), changed]);
-							base.update_field(base.current_state.marked._signature); //FIXME
+							base.points[base.current_state.marked._signature].proper_background();
 						}
 
 						if (proper_script[0] == 'R' && proper_script[1] == dir_to_cardinal[direction_int]){
@@ -1169,7 +1182,7 @@ export class Application{
 					if (this.maps[base.current_state.map]['points_data'][base.current_state.marked._signature]['terrains'].has(terrain)) 
 						this.maps[base.current_state.map]['points_data'][base.current_state.marked._signature]['terrains'].delete(terrain);
 					else this.maps[base.current_state.map]['points_data'][base.current_state.marked._signature]['terrains'].add(terrain);
-					this.points[base.current_state.marked._signature].proper_background(this.maps[base.current_state.map]['points_data'][base.current_state.marked._signature], );
+					this.points[base.current_state.marked._signature].proper_background();
 					this.changer();
 					return;
 				}

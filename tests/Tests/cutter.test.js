@@ -16,9 +16,7 @@ test('cutter', () => {
 	doc.click_on_map('alpha');
 
 	doc.click_on_point(7, 5);
-	doc.press_key('ArrowUp');
-	doc.press_key('ArrowRight');
-	doc.press_key('ArrowUp');
+	doc.chain_directions('URU')
 
 	doc.auxclick_on_point(5, 7);
 	document.getElementById('shorthand_text').value = '1184';

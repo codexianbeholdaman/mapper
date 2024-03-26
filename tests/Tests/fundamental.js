@@ -77,6 +77,13 @@ export const auxclick_event = new MouseEvent("auxclick", {
         cancelable: true,
 });
 
+const direction_to_key = {
+	'R': 'ArrowRight',
+	'U': 'ArrowUp',
+	'D': 'ArrowDown',
+	'L': 'ArrowLeft'
+}
+
 export class Document_utils{
 	constructor(doc){
 		this.doc = doc;
@@ -123,6 +130,12 @@ export class Document_utils{
 	press_key(key, element=null){
 		if (!element)
 			this.doc.dispatchEvent(new KeyboardEvent('keydown', {'key': key}));
+	}
+
+	chain_directions(directions){
+		for (var direction of directions){
+			this.press_key(direction_to_key[direction]);
+		}
 	}
 }
 
