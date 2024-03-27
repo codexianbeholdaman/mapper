@@ -25,8 +25,7 @@ test('multiple_maps', () => {
 	doc.click_on_map('beta');
 	doc.click_on_point(7, 5);
 	for (var i=0; i<4; i+=1){
-		doc.press_key('ArrowUp');
-		doc.press_key('ArrowRight');
+		doc.chain_directions('UR');
 	}
 
 	var data_1 = new Map_data_parser(app.create_data_dump());

@@ -17,9 +17,7 @@ test('translate', () => {
 	doc.add_map('beta');
 	doc.click_on_map('alpha');
 	doc.click_on_point(7, 5);
-	doc.press_key('ArrowUp');
-	doc.press_key('ArrowRight');
-	doc.press_key('ArrowUp');
+	doc.chain_directions('URU');
 
 	var data_1 = new Map_data_parser(app.create_data_dump());
 	expect(data_1.get_all_usable()).toStrictEqual(new Set(['7 5', '6 5', '6 6']));

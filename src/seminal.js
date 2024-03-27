@@ -76,7 +76,7 @@ export class Map{
 	}
 
 	//TODO: Can be sped up
-	resize_map(new_size){
+	resize(new_size){
 		var new_x = new_size[1], new_y = new_size[0];
 		var old_x = this.general_data['map size'][1], old_y = this.general_data['map size'][0];
 
@@ -115,10 +115,10 @@ export class Map{
 		return [[min_y, min_x], [max_y, max_x]];
 	}
 
-	cut_map(){
+	cut(){
 		var [[y_min, x_min], [y_max, x_max]] = this.get_extremities();
 		this.translate(-y_min, -x_min);
-		this.resize_map([y_max-y_min+1, x_max-x_min+1]);
+		this.resize([y_max-y_min+1, x_max-x_min+1]);
 	}
 
 	//TODO: old version files: change everything... somehow
@@ -134,7 +134,7 @@ export class Map{
 		return points_data;
 	}
 
-	get_map_size(){
+	get_size(){
 		var all_points = Object.keys(this.point_data).map((x) => (x.split(' ').map((y) => Number(y))));
 
 		var max_x = 0, max_y = 0;
@@ -145,7 +145,7 @@ export class Map{
 		return [max_y+1, max_x+1];
 	}
 
-	initialize_map_data(){
+	initialize_data(){
 		var map_size = this.general_data['map size'];
 		this.points_data = {};
 
@@ -166,7 +166,7 @@ export class Map{
 		_map_gd['exploration_blobber'] = full_data['exploration_blobber']??true;
 		_map_gd['map general'] = full_data['map general']??'';
 		this.points_data = this.terrainer(full_data['points']);
-		_map_gd['map size'] = full_data['map size']??this.get_map_size(); //can be done with get_extremities
+		_map_gd['map size'] = full_data['map size']??this.get_size(); //can be done with get_extremities
 	}
 
 	construct_from_nothing(grid_size){
@@ -286,7 +286,7 @@ class Point{
 		this.base = application;
 
 		this.element.addEventListener('click', function(){
-			var base = this._entry;
+			var base = this.general.base;
 			if (base.controls.ground_truth.checked && !base.maps[base.current_state.map]['points_data'][this._signature].used) return;
 			if (base.current_state.marked) base.current_state.marked.clear_pointer();
 			
@@ -307,7 +307,7 @@ class Point{
 		});
 
 		this.element.addEventListener(_CONFIG_ACCESS_POINT_DATA, function(_event){
-			var base = this._entry;
+			var base = this.general.base;
 			if (_CONFIG_ACCESS_POINT_DATA == 'contextmenu') _event.preventDefault();
 			point_images.innerHTML = '';
 			if (base.current_focus){
@@ -564,7 +564,7 @@ export class Application{
 		var new_map_size = this.controls.map_size.value.split(',').map((x) => Number(x));
 
 		if (old_map_size && (old_map_size[0] != new_map_size[0] || old_map_size[1] != new_map_size[1]) && this.current_state.map != '_unknown')
-			this.maps[this.current_state.map].resize_map(new_map_size);
+			this.maps[this.current_state.map].resize(new_map_size);
 		if (this.controls.translate.value){
 			this.maps[this.current_state.map].translate(...this.controls.translate.value.split(',').map(z => Number(z)));
 			this.controls.translate.value = '';
@@ -664,8 +664,6 @@ export class Application{
 			'top':'5px',
 			'right':'5px',
 			'width':'15px',
-			'height':'15px',
-			'borderRadius':'100%'
 		});
 		new_map_element._map_name = map_name;
 
@@ -801,9 +799,6 @@ export class Application{
 				var point = new Point(this);
 				point.fix_coordinates(row_nr, column_nr);
 				points[`${row_nr} ${column_nr}`] = point;
-
-				point.element._entry = this;
-
 				row.appendChild(point.element);
 			}
 		}
@@ -835,7 +830,7 @@ export class Application{
 
 			base.controls.maps_list.appendChild(map_overlay);
 
-			base.maps[map_name].initialize_map_data();
+			base.maps[map_name].initialize_data();
 			base.change_map(map_name);
 		};
 	}
@@ -1061,7 +1056,7 @@ export class Application{
 
 		this.maps = {};
 		this.maps[this.current_state.map] = new Map({'title':'_unknown', 'grid_size': this.GRID_SIZE});
-		this.maps[this.current_state.map].initialize_map_data();
+		this.maps[this.current_state.map].initialize_data();
 
 
 		this.ascending_y = false;
@@ -1110,7 +1105,7 @@ export class Application{
 		document._entry = this;
 		document.addEventListener('keydown', function(e){
 			var base = this._entry;
-			if((e.target.tagName == 'INPUT' && e.target.getAttribute('type') != 'checkbox') || e.target.tagName == 'TEXTAREA') return;
+			if((e.target.tagName == 'INPUT' && e.target.getAttribute('type') != 'checkbox' && e.target.getAttribute('type') != 'radio') || e.target.tagName == 'TEXTAREA') return;
 			if (e.key == 't') base.controls.ground_truth.checked = !base.controls.ground_truth.checked;
 
 			if (!base.current_state.marked) return;
@@ -1121,6 +1116,8 @@ export class Application{
 			var changes_introduced = [];
 			var directional_keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
 
+			if (directional_keys.includes(e.key))
+				e.preventDefault();
 			if (directional_keys.includes(e.key) && base.controls.overhead.checked){
 				changes_introduced = base.process_overhead_move(e.key);
 				if (base.current_state.map && base.map_element_overlays[base.current_state.map] && changes_introduced.length) base.changer();
@@ -1289,7 +1286,7 @@ export class Application{
 			this._entry.save_focus();
 			this._entry.current_focus = null;
 			var map = this._entry.maps[this._entry.current_state.map];
-			map.cut_map();
+			map.cut();
 			this._entry.controls.map_size.value = `${map.general_data['map size'][0]},${map.general_data['map size'][1]}`;
 			this._entry.change_map(this._entry.current_state.map);
 		};
