@@ -435,6 +435,120 @@ class Point{
 }
 
 class Grid{
+	create_label(value, type){
+		var wonder_golden = '#B37700';
+		var label = document.createElement('div');
+
+		label.innerHTML = `${value}`;
+		assign_style_to_element(label, standard_style);
+		label.style['backgroundColor'] = wonder_golden;
+		
+		if (type == 'r') label.style['width'] = '50px';
+		else{
+			label.style['height'] = '50px';
+			label.style['lineHeight'] = '50px';
+		}
+
+		return label;
+	}
+
+	constructor(grid_size, application){
+		this.base = application;
+		this.full_size = grid_size;
+
+		var points = {};
+		this.row_with_labels = document.createElement('div');
+		this.grid = document.getElementById('map_proper');
+
+		this.row_with_labels.style['position'] = 'sticky';
+		this.row_with_labels.style['top'] = '0';
+
+		var point_of_entry = document.createElement('div');
+		assign_style_to_element(point_of_entry, standard_style);
+		assign_style_to_element(point_of_entry, point_of_entry_style);
+		point_of_entry.innerHTML = 'y\\x'
+		this.row_with_labels.appendChild(point_of_entry);
+
+		this.column_labels = {};
+		for (var column_nr=0; column_nr<grid_size[1]; column_nr+=1){
+			var column_label = this.create_label(column_nr, 'c');
+			this.column_labels[column_nr] = column_label;
+			this.row_with_labels.appendChild(column_label);
+		}
+		this.grid.appendChild(this.row_with_labels);
+
+		this.row_labels = {};
+		var row_start=grid_size[0]-1, row_end=-1, row_diff = -1;
+		if (application.ascending_y){
+			row_start = 0;
+			row_end = grid_size[0];
+			row_diff = 1;
+		}
+
+		for (var row_nr=row_start; row_nr != row_end; row_nr += row_diff){
+			var row = document.createElement('div');
+			this.grid.appendChild(row);
+
+			var row_label = this.create_label(row_nr, 'r');
+			this.row_labels[row_nr] = row_label;
+			row.appendChild(row_label);
+
+			for (var column_nr=0; column_nr<grid_size[1]; column_nr+=1){
+				var point = new Point(application);
+				point.fix_coordinates(row_nr, column_nr);
+				points[`${row_nr} ${column_nr}`] = point;
+				row.appendChild(point.element);
+			}
+		}
+		this.points = points;
+	}
+
+	enlarge(new_size){
+		for (var column_nr=this.full_size[1]; column_nr<new_size[1]; column_nr+=1){
+			var column_label = this.create_label(column_nr, 'c');
+			this.column_labels[column_nr] = column_label;
+			this.row_with_labels.appendChild(column_label);
+		}
+
+		for (var row_nr=this.full_size[0]; row_nr<new_size[0]; row_nr++){
+			var row = document.createElement('div');
+			if (this.base.ascending_y) this.grid.append(row);
+			else this.grid.prepend(row);
+
+			var row_label = this.create_label(row_nr, 'r');
+			this.row_labels[row_nr] = row_label;
+			row.appendChild(row_label);
+
+			for (var column_nr=0; column_nr<new_size[1]; column_nr+=1){
+				var point = new Point(this.base);
+				point.fix_coordinates(row_nr, column_nr);
+				this.points[`${row_nr} ${column_nr}`] = point;
+				row.appendChild(point.element);
+			}
+		}
+	}
+
+	resize(new_size){
+		var size_y = new_size[0];
+		var size_x = new_size[1];
+		if (size_y > this.full_size[0] || size_x > this.full_size[1])
+			this.enlarge([Math.max(size_y, this.full_size[0]), Math.max(size_x, this.full_size[1])]);
+
+		for (var y=0; y<this.full_size[0]; y++){
+			if (y<size_y) this.row_labels[y].style.display = 'inline-block';
+			else this.row_labels[y].style.display = 'none';
+
+			for (var x=0; x<this.full_size[1]; x++){
+				if (x<size_x && y<size_y) this.points[`${y} ${x}`].element.style.display = 'inline-block';
+				else this.points[`${y} ${x}`].element.style.display = 'none';
+			}
+		}
+
+		for (var x=0; x<this.full_size[1]; x++){
+			if (x<size_x) this.column_labels[x].style.display = 'inline-block';
+			else this.column_labels[x].style.display = 'none';
+		}
+	}
 }
 
 export class Application{
@@ -576,7 +690,7 @@ export class Application{
 	load_map_presentation(map_name){
 		var to_load = this.maps[map_name]['points_data'];
 		this.current_state['map'] = map_name;
-		this.resize_grid(this.maps[map_name]['general_data']['map size']);
+		this.grid.resize(this.maps[map_name]['general_data']['map size']);
 
 		var _map_gd = this.maps[this.current_state.map]['general_data'];
 		this.controls.ground_truth.checked = _map_gd['ground truth'];
@@ -664,6 +778,8 @@ export class Application{
 			'top':'5px',
 			'right':'5px',
 			'width':'15px',
+			'height':'15px',
+			'borderRadius':'100%'
 		});
 		new_map_element._map_name = map_name;
 
@@ -727,83 +843,6 @@ export class Application{
 		return to_save;
 	}
 
-	resize_grid(new_size){
-		var size_y = new_size[0];
-		var size_x = new_size[1];
-
-		for (var y=0; y<this.GRID_SIZE[0]; y++){
-			if (y<size_y) this.presentation['row_labels'][y].style.display = 'inline-block';
-			else this.presentation['row_labels'][y].style.display = 'none';
-
-			for (var x=0; x<this.GRID_SIZE[1]; x++){
-				if (x<size_x && y<size_y) this.points[`${y} ${x}`].element.style.display = 'inline-block';
-				else this.points[`${y} ${x}`].element.style.display = 'none';
-			}
-		}
-
-		for (var x=0; x<this.GRID_SIZE[1]; x++){
-			if (x<size_x) this.presentation['column_labels'][x].style.display = 'inline-block';
-			else this.presentation['column_labels'][x].style.display = 'none';
-		}
-	}
-
-	create_grid(grid_size){
-		var points = {};
-		var row_with_labels = document.createElement('div');
-		var basis = document.getElementById('map_proper');
-		var wonder_golden = '#B37700';
-
-		row_with_labels.style['position'] = 'sticky';
-		row_with_labels.style['top'] = '0';
-
-		var point_of_entry = document.createElement('div');
-		assign_style_to_element(point_of_entry, standard_style);
-		assign_style_to_element(point_of_entry, point_of_entry_style);
-		point_of_entry.innerHTML = 'y\\x'
-		row_with_labels.appendChild(point_of_entry);
-
-		this.presentation['column_labels'] = {};
-		for (var column_nr=0; column_nr<grid_size[1]; column_nr+=1){
-			var column_label = document.createElement('div');
-			column_label.innerHTML = `${column_nr}`;
-			assign_style_to_element(column_label, standard_style);
-			column_label.style['backgroundColor'] = wonder_golden;
-			column_label.style['height'] = '50px';
-			column_label.style['lineHeight'] = '50px';
-			this.presentation['column_labels'][column_nr] = column_label;
-			row_with_labels.appendChild(column_label);
-		}
-		basis.appendChild(row_with_labels);
-
-		this.presentation['row_labels'] = {};
-		var row_start=grid_size[0]-1, row_end=-1, row_diff = -1;
-		if (this.ascending_y){
-			row_start = 0;
-			row_end = grid_size[0];
-			row_diff = 1;
-		}
-
-		for (var row_nr=row_start; row_nr != row_end; row_nr += row_diff){
-			var row = document.createElement('div');
-			basis.appendChild(row);
-
-			var row_label = document.createElement('div');
-			assign_style_to_element(row_label, standard_style);
-			row_label.style['backgroundColor'] = wonder_golden;
-			row_label.style['width'] = '50px';
-			row_label.innerHTML = `${row_nr}`;
-			this.presentation['row_labels'][row_nr] = row_label;
-			row.appendChild(row_label);
-
-			for (var column_nr=0; column_nr<grid_size[1]; column_nr+=1){
-				var point = new Point(this);
-				point.fix_coordinates(row_nr, column_nr);
-				points[`${row_nr} ${column_nr}`] = point;
-				row.appendChild(point.element);
-			}
-		}
-		return points;
-	}
 
 	create_map_adder(){
 		var add_map = this.controls.map_adder_input;
@@ -1050,14 +1089,12 @@ export class Application{
 			'map':'_unknown'
 		}
 		this.current_focus = null;
-		this.presentation = {};
 
 		this.GRID_SIZE = [_CONFIG_MAX_MAP_SIZE, _CONFIG_MAX_MAP_SIZE];
 
 		this.maps = {};
 		this.maps[this.current_state.map] = new Map({'title':'_unknown', 'grid_size': this.GRID_SIZE});
 		this.maps[this.current_state.map].initialize_data();
-
 
 		this.ascending_y = false;
 		this.revert = false;
@@ -1070,9 +1107,10 @@ export class Application{
 		else this._local_grid_default = this.GRID_SIZE;
 
 		this.create_map_adder();
-		this.points = this.create_grid(this.GRID_SIZE);
-		this.subsequent_changes = [];
+		this.grid = new Grid(this.GRID_SIZE, this);
+		this.points = this.grid.points;
 
+		this.subsequent_changes = [];
 		this.controls.orderer._entry = this;
 		this.controls.orderer.onclick = function(){
 			var base = this._entry;
