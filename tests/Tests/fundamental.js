@@ -155,5 +155,4 @@ export class Map_data_parser{
 
 export function set_configs(map_size = 16){
 	configs._CONFIG_GAME = 'Pool of Radiance';
-	configs._CONFIG_MAX_MAP_SIZE = 16;
 }

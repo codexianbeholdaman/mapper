@@ -462,6 +462,7 @@ class Grid{
 
 		this.row_with_labels.style['position'] = 'sticky';
 		this.row_with_labels.style['top'] = '0';
+		this.rows = {};
 
 		var point_of_entry = document.createElement('div');
 		assign_style_to_element(point_of_entry, standard_style);
@@ -487,6 +488,7 @@ class Grid{
 
 		for (var row_nr=row_start; row_nr != row_end; row_nr += row_diff){
 			var row = document.createElement('div');
+			this.rows[row_nr] = row;
 			this.grid.appendChild(row);
 
 			var row_label = this.create_label(row_nr, 'r');
@@ -503,6 +505,7 @@ class Grid{
 		this.points = points;
 	}
 
+	//a lot of constructor is copied
 	enlarge(new_size){
 		for (var column_nr=this.full_size[1]; column_nr<new_size[1]; column_nr+=1){
 			var column_label = this.create_label(column_nr, 'c');
@@ -510,8 +513,19 @@ class Grid{
 			this.row_with_labels.appendChild(column_label);
 		}
 
+		for (var row_nr=0; row_nr<this.full_size[0]; row_nr++){
+			var row = this.rows[row_nr];
+			for (var column_nr=this.full_size[1]; column_nr<new_size[1]; column_nr+=1){
+				var point = new Point(this.base);
+				point.fix_coordinates(row_nr, column_nr);
+				this.points[`${row_nr} ${column_nr}`] = point;
+				this.rows[row_nr].appendChild(point.element);
+			}
+		}
+
 		for (var row_nr=this.full_size[0]; row_nr<new_size[0]; row_nr++){
 			var row = document.createElement('div');
+			this.rows[row_nr] = row;
 			if (this.base.ascending_y) this.grid.append(row);
 			else this.grid.prepend(row);
 
@@ -526,6 +540,7 @@ class Grid{
 				row.appendChild(point.element);
 			}
 		}
+		this.full_size = new_size;
 	}
 
 	resize(new_size){
@@ -1090,10 +1105,11 @@ export class Application{
 		}
 		this.current_focus = null;
 
-		this.GRID_SIZE = [_CONFIG_MAX_MAP_SIZE, _CONFIG_MAX_MAP_SIZE];
+		if ('default map size' in this._game_config) this._local_grid_default = this._game_config['default map size'];
+		else this._local_grid_default = [16, 16];
 
 		this.maps = {};
-		this.maps[this.current_state.map] = new Map({'title':'_unknown', 'grid_size': this.GRID_SIZE});
+		this.maps[this.current_state.map] = new Map({'title':'_unknown', 'grid_size': this._local_grid_default});
 		this.maps[this.current_state.map].initialize_data();
 
 		this.ascending_y = false;
@@ -1103,11 +1119,9 @@ export class Application{
 		if ('backspace' in this._game_config && this._game_config['backspace'] == 'revert')
 			this.revert = true;
 
-		if ('default map size' in this._game_config) this._local_grid_default = this._game_config['default map size'];
-		else this._local_grid_default = this.GRID_SIZE;
 
 		this.create_map_adder();
-		this.grid = new Grid(this.GRID_SIZE, this);
+		this.grid = new Grid(this._local_grid_default, this);
 		this.points = this.grid.points;
 
 		this.subsequent_changes = [];
