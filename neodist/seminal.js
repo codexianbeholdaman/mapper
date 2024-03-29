@@ -1,6 +1,3 @@
-import {_CONFIG_ACCESS_POINT_DATA, _CONFIG_GAME, _CONFIG_PREFIX, _CONFIG_MAX_MAP_SIZE} from './config.js';
-import {GAME_DATA} from './game_terrain.js';
-import {standard_style, map_element_style, arrowy_style, inputter_style, point_of_entry_style, marking_style, teleports_style, mini_teleport_style, assign_style_to_element, single_distance_teleport} from './presentation.js';
 
 const integer_to_dir = {
 	0: {'x':0, 'y':1},
@@ -41,7 +38,7 @@ const arrow_to_dir = {
 	'ArrowLeft':3
 };
 
-export class Map{
+class Map{
 	static create_basic_point(){
 		return {'used':false, 'borders':[false, false, false, false], 'input':'', 'general':'', 'scripts':'', 'images':'', 'terrains':new Set()};
 	}
@@ -577,7 +574,7 @@ class Grid{
 	}
 }
 
-export class Application{
+class Application{
 	checkboxes_terrains(){
 		var terrains_div = document.getElementById('terrains');
 		for (var terrain in this._local_terrains){
