@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <title>
+   Mapping stuff
+  </title>
+  <link href="style.css" rel="stylesheet"/>
+ </head>
+ <body>
+  <div id="maps">
+   <div id="adder">
+    <input id="map_adder_input"/>
+    <div id="map_adder_button">
+    </div>
+   </div>
+   <div id="maps_list">
+   </div>
+  </div>
+  <div id="map_data">
+   <header>
+    <input disabled="" id="map_name" value="map name"/>
+    <div class="standard_button" id="rename">
+     Rename
+    </div>
+    <div class="standard_button" id="save_name">
+     Savo
+    </div>
+   </header>
+   <div id="map_proper" style="width:max-content">
+   </div>
+   <div id="data">
+    <div class="partial_data" id="point_data" style="border:3px dotted #663300">
+     <label for="general" style="font-size:17px">
+      General
+     </label>
+     <textarea id="general_text" name="general" style=" height:200px;"></textarea>
+     <label for="scripts" style="font-size:17px">
+      Scripts
+     </label>
+     <textarea id="scripts_text" name="scripts" style="height:150px"></textarea>
+     <label for="images" style="font-size:17px">
+      Images
+     </label>
+     <textarea id="images_text" name="images" style="height:100px"></textarea>
+     <label for="shorthand" style="font-size:17px">
+      Shorthand
+     </label>
+     <input id="shorthand_text" name="shorthand" style="height:40px">
+      <br/>
+      <label>
+       <input id="usable" name="usable" type="checkbox">
+        Usable
+       </input>
+      </label>
+      <label>
+       <input id="North_border" name="North_border" type="checkbox"/>
+       N
+      </label>
+      <label>
+       <input id="West_border" name="West_border" type="checkbox"/>
+       W
+      </label>
+      <label>
+       <input id="East_border" name="East_border" type="checkbox"/>
+       E
+      </label>
+      <label>
+       <input id="South_border" name="South_border" type="checkbox"/>
+       S
+      </label>
+      <div style="font-weight:bold">
+       Cell type
+      </div>
+      <div id="terrains">
+      </div>
+      <div id="point_images">
+      </div>
+      <div class="data_type_label" style="background:#663300">
+       Point data
+      </div>
+     </input>
+    </div>
+    <div class="partial_data" id="general_data" style="border:3px dotted #99004D">
+     <label for="map_general" style="font-size:17px">
+      General
+     </label>
+     <textarea id="map_general" name="map_general" style="height:200px"></textarea>
+     <input id="ground_truth" name="ground_truth" type="checkbox"/>
+     <label for="ground_truth">
+      Ground Truth mode
+     </label>
+     <div>
+      <label for="fly" style="font-size:20px">
+       Fly
+      </label>
+      <input id="fly" name="fly" style="width:200px; height:30px; font-size:20px"/>
+     </div>
+     <div>
+      <label for="teleport" style="font-size:20px">
+       Teleport
+      </label>
+      <input id="teleport" name="teleport" style="width:200px; height:30px; font-size:20px"/>
+     </div>
+     <div>
+      <label for="order" style="font-size:20px">
+       Order
+      </label>
+      <input id="order" name="order" style="width:200px; height:30px; font-size:20px"/>
+     </div>
+     <div>
+      <label for="model_blobber" style="font-size:20px">
+       Blobber
+      </label>
+      <input id="model_blobber" name="model" type="radio"/>
+      <label for="model_overhead" style="font-size:20px">
+       Overhead
+      </label>
+      <input id="model_overhead" name="model" type="radio"/>
+     </div>
+     <div>
+      <label for="map_size" style="font-size:20px">
+       Map size
+      </label>
+      <input id="map_size" name="map_size" style="width:200px; height:30px; font-size:20px"/>
+     </div>
+     <div class="data_type_label" style="background:#99004D">
+      Map data
+     </div>
+    </div>
+    <div class="partial_data" id="transforms" style="border:3px dotted #FF5500">
+     <div>
+      <label for="translate" style="font-size:20px">
+       Translate
+      </label>
+      <input id="translate" name="translate" style="width:200px; height:30px; font-size:20px"/>
+     </div>
+     <div class="standard_button" id="cutter" style="width:150px; height:40px; line-height:40px">
+      Default cut
+     </div>
+     <div class="data_type_label" style="background:#FF5500">
+      Transforms
+     </div>
+    </div>
+   </div>
+  </div>
+  <div>
+   <a id="saver">
+    Save
+   </a>
+   <label id="load_label">
+    <input id="loader" multiple="" style="display:none" type="file"/>
+    Load
+   </label>
+   <div id="orderer">
+    Order
+   </div>
+  </div>
+  <script src="./config.js">
+  </script>
+  <script src="./game_terrain.js">
+  </script>
+  <script src="./presentation.js">
+  </script>
+  <script src="./seminal.js">
+  </script>
+  <script src="./index.js">
+  </script>
+ </body>
+</html>

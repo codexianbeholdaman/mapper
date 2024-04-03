@@ -450,7 +450,12 @@ class Grid{
 		assign_style_to_element(label, standard_style);
 		label.style['backgroundColor'] = wonder_golden;
 		
-		if (type == 'r') label.style['width'] = '50px';
+		if (type == 'r'){
+			label.style['width'] = '50px';
+			label.style['position'] = 'sticky';
+			label.style['left'] = '0';
+			label.style['zIndex'] = '1';
+		}
 		else{
 			label.style['height'] = '50px';
 			label.style['lineHeight'] = '50px';

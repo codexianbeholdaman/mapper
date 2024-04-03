@@ -20,9 +20,6 @@
        	font-size:17px;
 	font-family: Arial;
 }
-.standard_button:hover{
-	background-color:#000000;
-}
 
 #maps_list{
 	height:800px; 
