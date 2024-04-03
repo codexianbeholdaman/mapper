@@ -113,8 +113,17 @@ export class Document_utils{
 		element.dispatchEvent(click_event);
 	}
 
+	get_map_overlay(name){
+		return Array.from(this.doc.getElementsByClassName('__overlay')).filter(x => x.getElementsByTagName('span')[0].innerHTML == name)[0];
+	}
+
 	click_on_map(name){
-		var element = Array.from(this.doc.getElementsByClassName('__map')).filter(x => x.getElementsByTagName('span')[0].innerHTML == name)[0];
+		var element = this.get_map_overlay(name).getElementsByClassName('__map')[0];
+		element.dispatchEvent(click_event);
+	}
+
+	click_on_flight(name, letter='F'){
+		var element = this.get_map_overlay(name).getElementsByClassName(`__movement_${letter}`)[0];
 		element.dispatchEvent(click_event);
 	}
 
@@ -127,9 +136,8 @@ export class Document_utils{
 		element.dispatchEvent(auxclick_event);
 	}
 
-	press_key(key, element=null){
-		if (!element)
-			this.doc.dispatchEvent(new KeyboardEvent('keydown', {'key': key}));
+	press_key(key){
+		this.doc.dispatchEvent(new KeyboardEvent('keydown', {'key': key}));
 	}
 
 	chain_directions(directions){
@@ -150,6 +158,13 @@ export class Map_data_parser{
 	get_all_usable(){
 		var entries = Object.entries(this.data.points);
 		return new Set(entries.filter(x => x[1].used).map(x => x[0]));
+	}
+}
+
+export class Application_utils{
+	static check_all_fields(app, expected){
+		var result = new Map_data_parser(app.create_data_dump());
+		expect(result.get_all_usable()).toStrictEqual(new Set(expected));
 	}
 }
 

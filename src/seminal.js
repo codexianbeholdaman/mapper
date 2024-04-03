@@ -272,7 +272,6 @@ class Point{
 		this.element.appendChild(marking);
 		this.element.appendChild(teleports);
 
-
 		this._arrow = arrow_part;
 		this._input = input_part;
 		this._marking = marking;
@@ -433,6 +432,12 @@ class Point{
 	update_field(){
 		var to_load = this.base.maps[this.base.current_state.map]['points_data'][this._signature];
 
+		//if (!this._past_data) this._past_data = to_load;
+		//else if (JSON.stringify(to_load) == JSON.stringify(this._past_data)){
+		//	this._past_data = to_load;
+		//	return;
+		//}
+
 		for (var i=0; i<4; i+=1){
 			if (to_load.borders[i]) this.element.style[`border${dir_to_border[i]}`] = `1px dashed #CCCCCC`;
 			else this.element.style[`border${dir_to_border[i]}`] = '1px solid black';
@@ -441,6 +446,7 @@ class Point{
 
 		this._input.innerHTML = to_load.input;
 		this.update_teleports();
+		this._past_data = to_load;
 	}
 }
 
@@ -628,7 +634,6 @@ export class Application{
 		this.set_changer(map);
 	}
 
-
 	update_part(map_name, movement, element){
 		var _map_gd = this.maps[map_name]['general_data'];
 		if (!_map_gd[movement] || _map_gd[movement] == '') element.style.display = 'none';
@@ -642,6 +647,7 @@ export class Application{
 			element.onclick = function(){
 				var base = this._entry;
 				var new_direction, new_place;
+
 				if (this._type == 'F'){
 					new_direction = base.current_state.direction;
 					if (new_direction == -1) new_direction = 0; //By default - northern
@@ -653,11 +659,10 @@ export class Application{
 					new_place = _tmp[0];
 				}
 
-				base.change_map(this._overlay._element._map_name);
+				var map_proper = base.maps[this._overlay._element._map_name];
+				if (!map_proper.points_data[new_place].used) map_proper.points_data[new_place].used = true;
 
-				base.current_state.direction = new_direction;
-				base.current_state.marked = base.points[new_place];
-				base.update_presentation(base.current_state);
+				base.enforce_new_state({'map':this._overlay._element._map_name, 'direction':new_direction, 'signature':new_place});
 			}
 		}
 	}
@@ -783,6 +788,7 @@ export class Application{
 	create_movement_overlay(letter){
 		var flier = document.createElement('div');
 		assign_style_to_element(flier, map_element_style);
+		flier.classList.add(`__movement_${letter}`);
 		flier.style.width = "50px";
 		flier.innerHTML = letter;
 		flier._type = letter;
@@ -795,6 +801,7 @@ export class Application{
 		var new_map_element = document.createElement('div');
 		new_map_element.id = `__map ${map_name}`;
 		new_map_element.classList.add(`__map`);
+		map_overlay.classList.add(`__overlay`);
 
 		var flier = this.create_movement_overlay('F');
 		var teleporter = this.create_movement_overlay('T');
@@ -905,6 +912,7 @@ export class Application{
 		};
 	}
 
+	//Requires: 'map' field, 'signature' field; optionally 'direction' field (integer)
 	enforce_new_state(new_state){
 		if (this.current_state.map != new_state.map) this.change_map(new_state.map);
 		if ('direction' in new_state) this.current_state.direction = new_state.direction;
@@ -1107,7 +1115,7 @@ export class Application{
 			'map_adder_button': document.getElementById('map_adder_button'),
 			'translate': document.getElementById('translate'),
 			'cutter': document.getElementById('cutter')
-		}
+		};
 
 		this._game_config = GAME_DATA[_CONFIG_GAME];
 		this._local_terrains = this._game_config['terrains'];
@@ -1224,7 +1232,7 @@ export class Application{
 							base.points[base.current_state.marked._signature].proper_background();
 						}
 
-						if (proper_script[0] == 'R' && proper_script[1] == dir_to_cardinal[direction_int]){
+						if (proper_script[0] == 'R' && proper_script[1].includes(dir_to_cardinal[direction_int])){
 							base.current_state.direction = (base.current_state.direction+2)%4;
 							base.subsequent_changes.push([Object.assign({}, base.current_state), []]);
 							base.update_presentation(base.current_state);

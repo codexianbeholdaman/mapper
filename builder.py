@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 
-with open('./dist/index.html') as index:
+with open('./src/index.html') as index:
     base = index.read()
 parsed_base = BeautifulSoup(base, 'html.parser')
 parsed_base.script.extract()

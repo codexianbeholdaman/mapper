@@ -3,7 +3,7 @@
  */
 import {Application} from '../../src/seminal.js';
 import * as configs from '../../src/config.js';
-import {full_mock, click_event, Document_utils, Map_data_parser, set_configs} from './fundamental.js';
+import {full_mock, click_event, Document_utils, Map_data_parser, Application_utils, set_configs} from './fundamental.js';
 
 
 test('movement', () => {
@@ -23,6 +23,5 @@ test('movement', () => {
 	}
 	doc.chain_directions('RURURUUU');
 
-	var data = new Map_data_parser(app.create_data_dump());
-	expect(data.get_all_usable()).toStrictEqual(new Set(['0 6', '0 5', '1 3', '1 4', '1 5', '1 6', '2 5', '3 5', '4 5', '5 5', '6 5', '7 5']));
+	Application_utils.check_all_fields(app, ['0 6', '0 5', '1 3', '1 4', '1 5', '1 6', '2 5', '3 5', '4 5', '5 5', '6 5', '7 5']);
 });

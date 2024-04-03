@@ -3,7 +3,7 @@
  */
 import {Application} from '../../src/seminal.js';
 import * as configs from '../../src/config.js';
-import {full_mock, click_event, Document_utils, Map_data_parser, set_configs} from './fundamental.js';
+import {full_mock, click_event, Document_utils, Map_data_parser, Application_utils, set_configs} from './fundamental.js';
 
 
 test('ground_truth', () => {
@@ -23,8 +23,7 @@ test('ground_truth', () => {
 	doc.press_key('t'); //set ground truth
 	doc.chain_directions('UURUU');
 
-	var data = new Map_data_parser(app.create_data_dump());
-	expect(data.get_all_usable()).toStrictEqual(new Set(['7 5', '6 5', '6 6', '7 6']));
+	Application_utils.check_all_fields(app, ['7 5', '6 5', '6 6', '7 6']);
 
 	expect(app.current_state.marked._coordinates).toStrictEqual({'row':6, 'column':6});
 	doc.auxclick_on_point(7, 5);

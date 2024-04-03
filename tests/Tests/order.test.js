@@ -3,7 +3,7 @@
  */
 import {Application} from '../../src/seminal.js';
 import * as configs from '../../src/config.js';
-import {full_mock, click_event, Document_utils, Map_data_parser, set_configs} from './fundamental.js';
+import {full_mock, click_event, Document_utils, Map_data_parser, Application_utils, set_configs} from './fundamental.js';
 
 
 test('order', () => {
@@ -42,10 +42,8 @@ test('order', () => {
 	expect(proper_maps).toStrictEqual(['xa', 'xar', 'b', 'a', 'c', 'aac']);
 
 	doc.click_on_map('a');
-	var data_1 = new Map_data_parser(app.create_data_dump());
-	expect(data_1.get_all_usable()).toStrictEqual(new Set(['2 2']));
+	Application_utils.check_all_fields(app, ['2 2']);
 
 	doc.click_on_map('xa');
-	var data_1 = new Map_data_parser(app.create_data_dump());
-	expect(data_1.get_all_usable()).toStrictEqual(new Set(['0 1']));
+	Application_utils.check_all_fields(app, ['0 1']);
 });

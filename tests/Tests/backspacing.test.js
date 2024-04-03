@@ -3,7 +3,7 @@
  */
 import {Application} from '../../src/seminal.js';
 import * as configs from '../../src/config.js';
-import {full_mock, click_event, Document_utils, Map_data_parser, set_configs} from './fundamental.js';
+import {full_mock, click_event, Document_utils, Map_data_parser, Application_utils, set_configs} from './fundamental.js';
 
 
 test('backspacing', () => {
@@ -40,20 +40,17 @@ test('backspacing', () => {
 	doc.press_key('ArrowUp');
 	doc.press_key('y');
 
-	var data_alpha_end = new Map_data_parser(app.create_data_dump());
-	expect(data_alpha_end.get_all_usable()).toStrictEqual(new Set(['7 5', '6 5', '10 8', '9 8']));
+	Application_utils.check_all_fields(app, ['7 5', '6 5', '10 8', '9 8']);
 
 	doc.press_key('Backspace');
 	doc.press_key('Backspace');
 	doc.press_key('Backspace');
 	doc.chain_directions('RUU');
 
-	var data_beta_end = new Map_data_parser(app.create_data_dump());
-	expect(data_beta_end.get_all_usable()).toStrictEqual(new Set(['7 1', '6 1', '5 1', '4 1', '4 2', '4 3']));
+	Application_utils.check_all_fields(app, ['7 1', '6 1', '5 1', '4 1', '4 2', '4 3']);
 
 	for (var i=0; i<7; i+=1){
 		doc.press_key('Backspace');
 	}
-	var data_alpha_start = new Map_data_parser(app.create_data_dump());
-	expect(data_alpha_start.get_all_usable()).toStrictEqual(new Set(['7 5', '6 5']));
+	Application_utils.check_all_fields(app, ['7 5', '6 5']);
 });

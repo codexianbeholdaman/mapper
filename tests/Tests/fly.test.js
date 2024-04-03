@@ -6,7 +6,7 @@ import * as configs from '../../src/config.js';
 import {full_mock, click_event, Document_utils, Map_data_parser, Application_utils, set_configs} from './fundamental.js';
 
 
-test('multiple_maps', () => {
+test('fly', () => {
 	set_configs();
 
 	document.write(full_mock);
@@ -16,19 +16,18 @@ test('multiple_maps', () => {
 	doc.add_map('alpha');
 	doc.add_map('beta');
 	doc.click_on_map('alpha');
-
-	var data_0 = new Map_data_parser(app.create_data_dump());
-
 	doc.click_on_point(7, 5);
-	for (var i=0; i<4; i+=1) doc.press_key('ArrowUp');
+	doc.chain_directions('UU');
 
+	document.getElementById('fly').value = '3 3';
 	doc.click_on_map('beta');
 	doc.click_on_point(7, 5);
-	for (var i=0; i<4; i+=1){
-		doc.chain_directions('UR');
-	}
-	Application_utils.check_all_fields(app, ['7 5', '6 5', '6 6', '7 6']);
+	doc.chain_directions('RU');
 
-	doc.click_on_map('alpha');
-	Application_utils.check_all_fields(app, ['7 5', '6 5', '5 5', '4 5', '3 5']);
+	doc.click_on_flight('alpha');
+	doc.chain_directions('UU');
+	Application_utils.check_all_fields(app, ['7 5', '6 5', '5 5', '3 3', '3 4', '3 5']);
+
+	doc.click_on_map('beta');
+	Application_utils.check_all_fields(app, ['7 5', '7 6']);
 });
