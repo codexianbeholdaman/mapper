@@ -6,7 +6,7 @@ To run the mapper:
 2. Run *listener.py* (perhaps after tinkering with it, depending on the operating system).
 
 # Quickstart
-1. Create a game entry in a GAME\_DATA object with looking like this:  
+1. Create a game entry in a GAME\_DATA object looking like this:  
 ```
 	'Game name':{
 		'terrains':{
@@ -14,7 +14,8 @@ To run the mapper:
 		'default map size':[16, 16],
 	}
 ```  
-Where default map size denotes default size of a map (this is relevant only for new maps, you can change it later).
+Where the 'default map size' option denotes default size of a map (this is relevant only for new maps, you can change it later).
+
 2. In a config.js file, set variable `_CONFIG_GAME` to the same game name (like this):  
 ```
 const _CONFIG_GAME = 'Game name';
