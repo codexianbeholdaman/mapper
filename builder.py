@@ -5,7 +5,6 @@ with open('./src/index.html') as index:
 parsed_base = BeautifulSoup(base, 'html.parser')
 parsed_base.script.extract()
 
-
 scripts = ['config.js', 'game_terrain.js', 'presentation.js', 'seminal.js', 'index.js']
 build_directory = './neodist'
 

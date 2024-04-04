@@ -135,7 +135,7 @@ export class Map{
 	}
 
 	get_size(){
-		var all_points = Object.keys(this.point_data).map((x) => (x.split(' ').map((y) => Number(y))));
+		var all_points = Object.keys(this.points_data).map((x) => (x.split(' ').map((y) => Number(y))));
 
 		var max_x = 0, max_y = 0;
 		for (var coordinates of all_points){
@@ -370,14 +370,10 @@ class Point{
 		else this.element.style['backgroundColor'] = 'grey';
 
 		//should work after refactor - check
-		if (point_data['terrains'].length > 0){
+		if (point_data['terrains'].size > 0){
 			const [terrain] = point_data['terrains'];
 			this.element.style.backgroundColor = this.base._local_terrains[terrain]['color'];
 		}
-
-		//for (var terrain in this.base._local_terrains){
-		//	if (point_data['terrains'].has(terrain)) this.element.style.backgroundColor = this.base._local_terrains[terrain]['color'];
-		//}
 	}
 
 	clear_pointer(){
@@ -438,13 +434,6 @@ class Point{
 	update_field(){
 		var to_load = this.base.maps[this.base.current_state.map]['points_data'][this._signature];
 
-		//// Does not work right now
-		//if (!this._past_data) this._past_data = to_load;
-		//else if (JSON.stringify(to_load) == JSON.stringify(this._past_data)){
-		//	this._past_data = to_load;
-		//	return;
-		//}
-
 		for (var i=0; i<4; i+=1){
 			if (to_load.borders[i]) this.element.style[`border${dir_to_border[i]}`] = `1px dashed #CCCCCC`;
 			else this.element.style[`border${dir_to_border[i]}`] = '1px solid black';
@@ -453,7 +442,6 @@ class Point{
 
 		this._input.innerHTML = to_load.input;
 		this.update_teleports();
-		this._past_data = to_load;
 	}
 }
 
@@ -556,7 +544,7 @@ class Grid{
 			var row = document.createElement('div');
 			this.rows[row_nr] = row;
 			if (this.base.ascending_y) this.grid.append(row);
-			else this.grid.prepend(row);
+			else this.row_with_labels.insertAdjacentElement('afterend', row);
 
 			var row_label = this.create_label(row_nr, 'r');
 			this.row_labels[row_nr] = row_label;
@@ -971,10 +959,11 @@ export class Application{
 	determine_next_map(map_name){
 		if (map_name[0] == '_'){
 			if (map_name == '_S') return this.current_state.map;
-			current_name_split = this.current_state.map.split(' ');
-			last = Number(current_name_split[current_name_split.length-1]);
+			var current_name_split = this.current_state.map.split(' ');
+			var last = Number(current_name_split[current_name_split.length-1]);
+
+			var to_add = -1;
 			if (map_name == '_UP') to_add = 1;
-			else to_add = -1;
 
 			current_name_split[current_name_split.length-1] = (last+to_add).toString();
 			return current_name_split.join(' ');

@@ -17,7 +17,6 @@ export var full_mock = `
 			<header>
 				<input id="map_name" value="map name" disabled>
 				<div class="standard_button" id="rename">Rename</div>
-				<div class="standard_button" id="save_name">Savo</div>
 			</header>
 			<div id="map_proper"></div>
 			<div id="data">
