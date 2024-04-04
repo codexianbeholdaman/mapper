@@ -100,8 +100,7 @@ export class Document_utils{
 		var map_name = this.doc.getElementById('map_name');
 		map_name.value = new_name;
 
-		var save_button = this.doc.getElementById('save_name');
-		save_button.dispatchEvent(click_event);
+		rename_button.dispatchEvent(click_event);
 	}
 
 	static get_point(y, x){
@@ -144,6 +143,12 @@ export class Document_utils{
 		for (var direction of directions){
 			this.press_key(direction_to_key[direction]);
 		}
+	}
+
+	auxclick_set(signature, id, value){
+		this.auxclick_on_point(...signature);
+		this.doc.getElementById(id).value = value;
+		this.auxclick_on_point(...signature);
 	}
 }
 

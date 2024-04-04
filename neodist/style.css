@@ -67,3 +67,15 @@ textarea{
 	font-size: 30px;
 	font-family: Arial;
 }
+
+#rename{
+	background-color:#880000;
+}
+
+#rename.active{
+	background-color:#000000;
+}
+
+#rename:hover{
+	background-color:#440000;
+}

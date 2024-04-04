@@ -256,6 +256,11 @@ class Point{
 		east_teleport.style['left'] = `${2*single_distance_teleport}px`;
 	}
 
+	//If a move occured over field with a focus, update only those
+	set_focus_movables(){
+		this.base.controls.input_used.checked = this.base.maps[this.base.current_state.map]['points_data'][this.base.current_focus._signature].used;
+	}
+
 	constructor(application){
 		this.element = document.createElement('div');
 
@@ -331,7 +336,8 @@ class Point{
 				else base.controls['terrains'][terrain].checked = false;
 			}
 
-			base.controls.input_used.checked = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].used;
+			//base.controls.input_used.checked = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].used;
+			this.general.set_focus_movables();
 			var ordering = ['N', 'E', 'S', 'W'];
 			for (var index of [0, 1, 2, 3]){
 				base.controls.input_borders[index].checked = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].borders[cardinal_to_dir[ordering[index]]];
@@ -429,6 +435,7 @@ class Point{
 	update_field(){
 		var to_load = this.base.maps[this.base.current_state.map]['points_data'][this._signature];
 
+		//// Does not work right now
 		//if (!this._past_data) this._past_data = to_load;
 		//else if (JSON.stringify(to_load) == JSON.stringify(this._past_data)){
 		//	this._past_data = to_load;
@@ -583,6 +590,37 @@ class Grid{
 			else this.column_labels[x].style.display = 'none';
 		}
 	}
+}
+
+class Renamer{
+	activate(){
+		this.app.controls.map_name.disabled = false;
+		this.active = true;
+		this.element.classList.add('active');
+	}
+
+	deactivate(valid=true){
+		this.app.controls.map_name.disabled = true;
+		if (valid)
+			this.app.rename_map(this.app.current_state.map, this.app.controls.map_name.value);
+		this.active = false;
+		this.element.classList.remove('active');
+	}
+
+	constructor(element, app){
+		this.renamer = element;
+		this.active = false;
+
+		this.app = app;
+		this.element = element;
+
+		element._entry = this;
+		element.onclick = function(){
+			if (!this._entry.active) this._entry.activate();
+			else this._entry.deactivate();
+		};
+	}
+
 }
 
 class Application{
@@ -762,6 +800,7 @@ class Application{
 		this.current_state['map'] = new_map;
 		this.load_map_presentation(new_map);
 		this.controls.map_name.value = new_map;
+		this.renamer.deactivate(false);
 	}
 
 	rename_map(old_map_name, new_map_name){
@@ -1072,6 +1111,14 @@ class Application{
 					var proper_script = script.split(';');
 					if (proper_script[0] == 'T'){
 						this.enforce_new_state(this.create_next_state(proper_script[1], proper_script[2], this.current_state.direction));
+
+						if (!this.maps[this.current_state.map].points_data[this.current_state.marked._signature].used){
+							this.maps[this.current_state.map].points_data[this.current_state.marked._signature].used = true;
+							if (this.current_focus == this.points[this.current_state.marked._signature]) this.points[this.current_state.marked._signature].set_focus_movables();
+						}
+						changes_introduced.push([0, this.current_state.marked._signature]);
+						this.points[this.current_state.marked._signature].proper_background();
+
 						return changes_introduced;
 					}
 				}
@@ -1111,7 +1158,8 @@ class Application{
 			'map_adder_input': document.getElementById('map_adder_input'),
 			'map_adder_button': document.getElementById('map_adder_button'),
 			'translate': document.getElementById('translate'),
-			'cutter': document.getElementById('cutter')
+			'cutter': document.getElementById('cutter'),
+			'renamer': document.getElementById('rename')
 		};
 
 		this._game_config = GAME_DATA[_CONFIG_GAME];
@@ -1343,19 +1391,10 @@ class Application{
 			}
 		}
 
-		document.getElementById('rename')._entry = this;
-		document.getElementById('rename').onclick = function(){
-			this._entry.controls.map_name.disabled = false;
-		};
+		this.renamer = new Renamer(this.controls.renamer, this);
 
-		document.getElementById('save_name')._entry = this;
-		document.getElementById('save_name').onclick = function(){
-			this._entry.controls.map_name.disabled = true;
-			this._entry.rename_map(this._entry.current_state.map, this._entry.controls.map_name.value);
-		};
-
-		document.getElementById('cutter')._entry = this;
-		document.getElementById('cutter').onclick = function(){
+		this.controls.cutter._entry = this;
+		this.controls.cutter.onclick = function(){
 			this._entry.save_focus();
 			this._entry.current_focus = null;
 			var map = this._entry.maps[this._entry.current_state.map];
