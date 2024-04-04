@@ -1,8 +1,8 @@
-Automapper for Might & Magic 1, 2, World of Xeen, and Pool of Radiance
+Automapper for Might & Magic 1, 2, World of Xeen, and some Gold Box titles.
 
 # Overview
 To run the mapper:
-1. Run *index.html* (probably in a browser).
+1. Run *neodist/index.html* (probably in a browser).
 2. Run *listener.py* (perhaps after tinkering with it, depending on the operating system).
 
 # Quickstart
@@ -16,7 +16,7 @@ To run the mapper:
 ```  
 Where the 'default map size' option denotes default size of a map (this is relevant only for new maps, you can change it later).
 
-2. In a config.js file, set variable `_CONFIG_GAME` to the same game name (like this):  
+2. In a neodist/config.js file, set variable `_CONFIG_GAME` to the same game name (like this):  
 ```
 const _CONFIG_GAME = 'Game name';
 ```
@@ -24,14 +24,21 @@ const _CONFIG_GAME = 'Game name';
 
 # The mapper part
 In order to be able to save the map, you need to create it by giving it the name and clicking a '+' button.  
-In order to change its name, well, edit the JSON file resulting from a save (key *title*).  
+In order to change its name, click on the *Rename* button while the map is active, change the value of the input field to a desired name, then click the *Rename* button again.
 In order to place a pointer on the map, click on the map.  
 For moving the pointer, use the arrow keys.  
 In order to move back (possibly overriding the last changes made by a pointer), use backspace.  
-In order to give a description (or script it, or manually give a border to it) to a field, click on it using a middle mouse button.  
+In order to give a description (or script it, or manually give a border to it) to a field, click on it using a middle mouse button (later referred to as 'focusing' on it).  
 In order to disallow making changes to the map by a pointer, use the *ground truth mode*.  
 A 'fly' signature can be defined in order to place a pointer on a given map. After defining a 'fly' value, clicking on the *F* button by the map name results in being transported to a given signature without changing direction.  
+A 'teleport' signature and a direction can be defined in order to place a pointer on a given map. After defining a 'teleport' value, clicking on the *F* button by the map name results in being transported to a given signature wit direction defined by a value given. This field can be set to *new_y new_x;new_direction*; for example, after setting it to *4 5;W* the button 'T' teleports to a field '4 5' on a given map facing west.  
+A map can be cut using the *Default cut* button. Using the button leads to a map with padding cut from it (fields on the map's borders without any written text or being in use).  
+A map can be translated; in order to do that, set the value in the *translate* field to 'delta\_y,delta\_x' and switch the map, perhaps to itself. The updated map will move field 'y x' to the position 'y+delta\_y x+delta\_x'.  
+
 To change the grid size, change the *map_size* parameter. It can be changed dynamically, and, as expected, it can result in a loss of data (so it might be preferred to save before changing the map size).  
+To apply any changes to fly, teleport, or a transform, the mp needs to be changed (maybe to itself - by clicking on any map on the belt with maps).
+To make changes to a field visible on a map using a focus, change a focus (maybe to itself).
+
 A movement model can be changed between *overhead* (using *left arrow* moves characters to the left) or *blobber* (using *left arrow* changes the direction characters face).
 The *Order* button allows to order maps according to:
 - The 'Order' parameter defined for a map, sorted lexicographically.
@@ -52,7 +59,7 @@ Scripts allow to programatically move a pointer to a different map and/or a diff
 &nbsp;&nbsp;*new_direction* refers to the new direction of a pointer - either N,W,E,S or R. By default (if not specified), it is equal to *direction*. R specifies reversing the pointer - for example, if the direction is 'N', then the *new_direction* equal to 'R' is equivalent to 'S'.  
 
 The following types of scripts can be defined:  
-&nbsp;T;*map_name*;*signature*[;new_direction]  
+&nbsp;T;*map_name*;*signature*[;*new_direction*]  
 &nbsp;&nbsp;Moving on the field results in being teleported to another field defined by *signature* on the map *map_name* facing the *new_direction*.  
 &nbsp;&nbsp;For example,  
 &nbsp;&nbsp;&nbsp;T;B3;13 3  
@@ -65,6 +72,13 @@ The following types of scripts can be defined:
 &nbsp;&nbsp;&nbsp;P;N;B3;13 5  
 &nbsp;&nbsp;Clicking 'y' on a given field while facing north field leads to a map B3, signature 13,5, facing north. It is equivalent to:  
 &nbsp;&nbsp;&nbsp;P;N;B3;13 5;N  
+
+&nbsp;W;*direction*;*map_name*;*signature*[;*new_direction*]  
+&nbsp;&nbsp;Being on a given field and moving forward while the pointer is directed in a correct way results in transition to another field defined by *signature* on the map *map_name* facing the *new_direction*.  
+&nbsp;&nbsp;For example,  
+&nbsp;&nbsp;&nbsp;W;N;B3;13 5  
+&nbsp;&nbsp;Moving forward on a given field while facing north field leads to a map B3, signature 13,5, facing north. It is equivalent to:  
+&nbsp;&nbsp;&nbsp;W;N;B3;13 5;N  
 
   
 &nbsp;WS;*direction*  
@@ -122,14 +136,13 @@ The "Auto" part consists of a single file - *listener.py* ; all it does is:
 The file uses *xdotool* for sending keys - so, if you don't have a system allowing you to use xdotool (such as Windows), you'll have to tinker (probably with autohotkey).
 
 # General config
-Right now, the *config.js* file allows one to specify the following options:
+Right now, the *neodist/config.js* file allows one to specify the following options:
 1. The mouse button allowing access to the data of a point (a field) on a map: either the middle mouse button (auxclick) or the right mouse click (contextmenu)
 2. The game, configuration for which is utilized; 
 3. The prefix for finding images, as explained in the file itself.
-4. The maximal map size (both coordinates). The higher it is, the slower the initial loading time.
 
 # Game-specific config
-All configurations for a single game can be defined in the *game_terrains.js* file.
+All configurations for a single game can be defined in the *neodist/game_terrains.js* file.
 1. *terrains*: Terrains can be defined by specifying the color of a field and a button, pressing which leads to switching a given terrain of a field.
 2. *default_map_size*: Default size of a map.
 3. *y_order*: The order of y-coordinates. If equal to 'ascending', then moving SOUTH is equivalent to moving towards a higher y coordinate (like in the Pool of Radiance). When omitted, it is treated as 'descending'.
