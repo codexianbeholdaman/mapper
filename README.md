@@ -24,14 +24,14 @@ const _CONFIG_GAME = 'Game name';
 
 # The mapper part
 In order to be able to save the map, you need to create it by giving it the name and clicking a '+' button.  
-In order to change its name, click on the *Rename* button while the map is active, change the value of the input field to a desired name, then click the *Rename* button again.
+In order to change its name, click on the *Rename* button while the map is active, change the value of the input field to a desired name, then click the *Rename* button again.  
 In order to place a pointer on the map, click on the map.  
 For moving the pointer, use the arrow keys.  
 In order to move back (possibly overriding the last changes made by a pointer), use backspace.  
 In order to give a description (or script it, or manually give a border to it) to a field, click on it using a middle mouse button (later referred to as 'focusing' on it).  
 In order to disallow making changes to the map by a pointer, use the *ground truth mode*.  
 A 'fly' signature can be defined in order to place a pointer on a given map. After defining a 'fly' value, clicking on the *F* button by the map name results in being transported to a given signature without changing direction.  
-A 'teleport' signature and a direction can be defined in order to place a pointer on a given map. After defining a 'teleport' value, clicking on the *F* button by the map name results in being transported to a given signature wit direction defined by a value given. This field can be set to *new_y new_x;new_direction*; for example, after setting it to *4 5;W* the button 'T' teleports to a field '4 5' on a given map facing west.  
+A 'teleport' signature and a direction can be defined in order to place a pointer on a given map. After defining a 'teleport' value, clicking on the *F* button by the map name results in being transported to a given signature with direction defined by a value given. This field can be set to *new_y new_x;new_direction*; for example, after setting it to *4 5;W* the button 'T' teleports to a field '4 5' on a given map facing west.  
 A map can be cut using the *Default cut* button. Using the button leads to a map with padding cut from it (fields on the map's borders without any written text or being in use).  
 A map can be translated; in order to do that, set the value in the *translate* field to 'delta\_y,delta\_x' and switch the map, perhaps to itself. The updated map will move field 'y x' to the position 'y+delta\_y x+delta\_x'.  
 
