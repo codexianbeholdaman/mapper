@@ -1,0 +1,81 @@
+#map_data{
+	display: inline-block;
+}
+
+#maps{
+	width:400px;
+       	display:inline-block;
+       	vertical-align:top;
+       	overflow:scroll;
+}
+
+.standard_button, #orderer, #saver, #load_label{
+	width:70px;
+       	height:70px;
+       	line-height:70px;
+       	background-color:#440000;
+       	text-align:center;
+       	color:white;
+       	display:inline-block;
+       	font-size:17px;
+	font-family: Arial;
+}
+
+#maps_list{
+	height:800px; 
+	overflow:scroll;
+}
+
+#map_proper{
+	position:relative;
+       	display:inline-block;
+       	vertical-align:top;
+}
+
+#data{
+	position:relative;
+       	display:inline-block;
+}
+
+.partial_data{
+	width:600px;
+       	vertical-align:top;
+       	position:relative;
+}
+
+textarea{
+	width:500px;
+	font-size:20px;
+}
+
+.data_type_label{
+	position:absolute;
+       	width:120px;
+       	height:50px;
+       	line-height:50px;
+       	bottom:0;
+       	right:0;
+       	color:white;
+       	text-align:center
+
+}
+
+#map_name{
+	width: 300px;
+	height: 50px;
+	line-height: 50px;
+	font-size: 30px;
+	font-family: Arial;
+}
+
+#rename{
+	background-color:#880000;
+}
+
+#rename.active{
+	background-color:#000000;
+}
+
+#rename:hover{
+	background-color:#440000;
+}

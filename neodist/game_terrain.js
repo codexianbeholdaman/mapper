@@ -1,4 +1,4 @@
-function create_terrain(color, button){
+function create_terrain(color, button){ //Export important for tests
 	return {
 		'color':color,
 		'button':button
@@ -6,6 +6,14 @@ function create_terrain(color, button){
 }
 
 var GAME_DATA = {
+	'FALLBACK':{ //Fallback is goldboxy
+		'terrains':{
+		},
+		'default map size':[16, 16],
+		'y_order':'ascending',
+		'backspace':'revert'
+	},
+
 	'MM1':{
 		'terrains':{
 			'water':create_terrain('#99FFFF', 'w'),
@@ -56,6 +64,14 @@ var GAME_DATA = {
 	},
 	'Secret of the Silver Blades':{
 		'terrains':{
+		},
+		'default map size':[16, 16],
+		'y_order':'ascending',
+		'backspace':'revert'
+	},
+	'Pools of Darkness':{
+		'terrains':{
+			'muscle':create_terrain('#9B7D4F', 'm'),
 		},
 		'default map size':[16, 16],
 		'y_order':'ascending',

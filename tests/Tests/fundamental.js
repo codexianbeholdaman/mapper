@@ -1,4 +1,15 @@
 import * as configs from '../../src/config.js';
+import * as game_configs from '../../src/game_terrain.js';
+
+game_configs.GAME_DATA['mock'] = {
+	'terrains':{
+		'river':game_configs.create_terrain('#99FFFF', 'w'),
+		'muscle':game_configs.create_terrain('#9B7D4F', 'm'),
+	},
+	'default map size':[16, 16],
+	'y_order':'ascending',
+	'backspace':'revert'
+}
 
 export var full_mock = `
 <!DOCTYPE html>
@@ -172,6 +183,6 @@ export class Application_utils{
 	}
 }
 
-export function set_configs(map_size = 16){
-	configs._CONFIG_GAME = 'Pool of Radiance';
+export function set_configs(map_size = 16){ //unused arg
+	configs._CONFIG_GAME = 'mock';
 }

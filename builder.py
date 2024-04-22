@@ -13,7 +13,7 @@ for script in scripts:
         script_text = _.read()
 
     _ = script_text.split('\n')
-    _ = [x for x in _ if 'import' not in x]
+    _ = [x for x in _ if not x.startswith('import')]
     new_script = '\n'.join(_)
     new_script = new_script.replace('export ', '')
 

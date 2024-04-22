@@ -1,4 +1,4 @@
-import {_CONFIG_ACCESS_POINT_DATA, _CONFIG_GAME, _CONFIG_PREFIX, _CONFIG_MAX_MAP_SIZE} from './config.js';
+import {_CONFIG_ACCESS_POINT_DATA, _CONFIG_GAME, _CONFIG_PREFIX} from './config.js';
 import {GAME_DATA} from './game_terrain.js';
 import {standard_style, map_element_style, arrowy_style, inputter_style, point_of_entry_style, marking_style, teleports_style, mini_teleport_style, assign_style_to_element, single_distance_teleport} from './presentation.js';
 
@@ -621,7 +621,7 @@ export class Application{
 			var _input = document.createElement('input');
 			_input.type = 'checkbox';
 			_input.name = terrain;
-			_input.id = terrain;
+			_input.id = `terrain_` + terrain;
 
 			var _label = document.createElement('label');
 			_label.innerHTML = terrain[0].toUpperCase() + terrain.slice(1);
@@ -1154,7 +1154,14 @@ export class Application{
 			'renamer': document.getElementById('rename')
 		};
 
-		this._game_config = GAME_DATA[_CONFIG_GAME];
+		if (_CONFIG_GAME in GAME_DATA){
+			this._game_config = GAME_DATA[_CONFIG_GAME];
+		}
+		else{
+			this._game_config = GAME_DATA['FALLBACK'];
+		}
+
+
 		this._local_terrains = this._game_config['terrains'];
 		this.checkboxes_terrains();
 		this.map_element_overlays = {};
@@ -1287,13 +1294,13 @@ export class Application{
 				return;
 			}
 
-			for (var terrain in this._local_terrains){
-				if (e.key == this._local_terrains[terrain]['button']){
-					if (this.maps[base.current_state.map]['points_data'][base.current_state.marked._signature]['terrains'].has(terrain)) 
-						this.maps[base.current_state.map]['points_data'][base.current_state.marked._signature]['terrains'].delete(terrain);
-					else this.maps[base.current_state.map]['points_data'][base.current_state.marked._signature]['terrains'].add(terrain);
-					this.points[base.current_state.marked._signature].proper_background();
-					this.changer();
+			for (var terrain in base._local_terrains){
+				if (e.key == base._local_terrains[terrain]['button']){
+					if (base.maps[base.current_state.map]['points_data'][base.current_state.marked._signature]['terrains'].has(terrain)) 
+						base.maps[base.current_state.map]['points_data'][base.current_state.marked._signature]['terrains'].delete(terrain);
+					else base.maps[base.current_state.map]['points_data'][base.current_state.marked._signature]['terrains'].add(terrain);
+					base.points[base.current_state.marked._signature].proper_background();
+					base.changer();
 					return;
 				}
 			}
@@ -1341,7 +1348,23 @@ export class Application{
 				}
 				return;
 			}
+
+			//TODO: Only for nw's eyes
+			//if (e.ctrlKey && e.key == 'r'){
+			//	var win = nw.Window.get();
+			//	win.reload();
+			//}
 		});
+
+		//TODO: Only for nw's eyes
+		//this.base_scale = 1;
+		//document.addEventListener('wheel', function(e){
+		//	if (e.ctrlKey){
+		//		this._entry.base_scale = this._entry.base_scale + e.deltaY * (-0.01);
+		//		nw.Window.get(window).zoomLevel = this._entry.base_scale;
+		//	}
+		//	
+		//});
 
 		document.getElementById('saver')._entry = this;
 		document.getElementById('saver').onclick = function(){

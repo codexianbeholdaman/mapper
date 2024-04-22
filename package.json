@@ -1,10 +1,10 @@
 {
   "name": "mapper",
-  "main": "dist/index.html",
+  "main": "src/index.html",
   "version": "1.0.0",
   "description": "Automapper for some games",
   "scripts": {
-    "test": "jest",
+    "test": "jest . --verbose --config=./tests/jest.config.js",
     "build": "webpack --mode=production --node-env=production",
     "build:dev": "webpack --mode=development",
     "build:prod": "webpack --mode=production --node-env=production",
@@ -38,5 +38,8 @@
     "moduleFileExtensions": [
       "js"
     ]
+  },
+  "dependencies": {
+    "@rwh/keystrokes": "^1.5.5"
   }
 }
