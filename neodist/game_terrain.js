@@ -2,14 +2,14 @@ function create_terrain(color, button){ //Export important for tests
 	return {
 		'color':color,
 		'button':button
-	}
+	};
 }
 
 function create_map_type(inactive, hover){ //Export important for tests
 	return {
 		'inactive':inactive,
 		'hover':hover
-	}
+	};
 }
 
 var GAME_DATA = {

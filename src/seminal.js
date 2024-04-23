@@ -262,7 +262,7 @@ class Point{
 		east_teleport.style['left'] = `${2*single_distance_teleport}px`;
 	}
 
-	//If a move occured over field with a focus, update only those
+	//If a move occured over field with a focus, update only those; TODO: needs borders
 	set_focus_movables(){
 		this.base.controls.input_used.checked = this.base.maps[this.base.current_state.map]['points_data'][this.base.current_focus._signature].used;
 	}
@@ -751,6 +751,106 @@ export class Map_overlay{
 	}
 }
 
+class Movement_processor{
+	constructor(maps){
+		this.maps = maps;
+	}
+
+	define_world(current_state, operation){
+		this.state = Movement_processor.translate_state(current_state);
+		this.operation = operation;
+	}
+
+	determine_next_map(map_name){
+		if (map_name[0] == '_'){
+			if (map_name == '_S') return this.state.map;
+			var current_name_split = this.state.map.split(' ');
+			var last = Number(current_name_split[current_name_split.length-1]);
+
+			var to_add = -1;
+			if (map_name == '_UP') to_add = 1;
+
+			current_name_split[current_name_split.length-1] = (last+to_add).toString();
+			return current_name_split.join(' ');
+		}
+		return map_name;
+	}
+
+	determine_next_signature(signature){
+		if (signature == '_P') return this.state.signature.join(' ');
+		return signature;
+	}
+	determine_next_direction(direction){
+		if (typeof direction == 'number') return direction;
+		if (direction == 'R') return (this.state.direction+2)%4;
+		return cardinal_to_dir[direction];
+	}
+
+	create_next_state(map, signature, direction){
+		return {'map':this.determine_next_map(map), 'signature':this.determine_next_signature(signature), 'direction':this.determine_next_direction(direction)};
+	}
+
+	mark_if_unused(next_state){
+		return (!this.maps[next_state.map].points_data[next_state.signature].used)?[[0, next_state.signature]]:[]
+	}
+
+	trap_movement(proper_script){
+		var next_state = this.create_next_state(proper_script[1], proper_script[2], this.state.direction);
+		var changes = this.mark_if_unused(next_state);
+		return [next_state, changes];
+	}
+
+	wilderness_movement(proper_script){
+		var old_direction = this.state.direction;
+		var next_state = this.create_next_state(proper_script[2], proper_script[3], proper_script[4]??old_direction);
+		var changes = this.mark_if_unused(next_state);
+		return [next_state, changes];
+	}
+
+	wilderness_movement_simplified(proper_script){
+		var old_direction = this.state.direction;
+		var map = this.state.map;
+		var [coordinate_y, coordinate_x] = this.state.signature;
+		var ln = map.length;
+
+		var map_column = map.charCodeAt(ln-2);
+		var map_row = map.charCodeAt(ln-1);
+		var start = map.substring(0, ln-2);
+
+
+		if (proper_script[1] == 'N'){
+			coordinate_y = 0;
+			map_row = map_row-1;
+		}
+		if (proper_script[1] == 'S'){
+			coordinate_y = 15;
+			map_row = map_row+1;
+		}
+
+		if (proper_script[1] == 'W'){
+			coordinate_x = 15;
+			map_column = map_column-1;
+		}
+		if (proper_script[1] == 'E'){
+			coordinate_x = 0;
+			map_column = map_column+1;
+		}
+		map_row = String.fromCharCode(map_row);
+		map_column = String.fromCharCode(map_column);
+
+		var next_state = {'map':`${start}${map_column}${map_row}`, 'signature':`${coordinate_y} ${coordinate_x}`, 'direction':old_direction};
+		var changes = this.mark_if_unused(next_state);
+		return [next_state, changes];
+	}
+
+	process_blobber_movement(old_state, movement_type){
+	}
+
+	static translate_state(state){
+		return {'map':state.map, 'signature':state.marked._signature.split(' ').map(x => Number(x)), 'direction':state.direction};
+	}
+}
+
 export class Application{
 	checkboxes_terrains(){
 		var terrains_div = document.getElementById('terrains');
@@ -1010,34 +1110,6 @@ export class Application{
 		return `${row + moves*integer_to_dir[direction_int].y*descend} ${column + moves*integer_to_dir[direction_int].x}`;
 	}
 
-	determine_next_map(map_name){
-		if (map_name[0] == '_'){
-			if (map_name == '_S') return this.current_state.map;
-			var current_name_split = this.current_state.map.split(' ');
-			var last = Number(current_name_split[current_name_split.length-1]);
-
-			var to_add = -1;
-			if (map_name == '_UP') to_add = 1;
-
-			current_name_split[current_name_split.length-1] = (last+to_add).toString();
-			return current_name_split.join(' ');
-		}
-		return map_name;
-	}
-
-	determine_next_signature(signature){
-		if (signature == '_P') return this.current_state.marked._signature;
-		return signature;
-	}
-	determine_next_direction(direction){
-		if (typeof direction == 'number') return direction;
-		if (direction == 'R') return (this.current_state.direction+2)%4;
-		return cardinal_to_dir[direction];
-	}
-	create_next_state(map, signature, direction){
-		return {'map':this.determine_next_map(map), 'signature':this.determine_next_signature(signature), 'direction':this.determine_next_direction(direction)};
-	}
-
 	//start can be inferred from direction
 	//start, end - both cells; if start + direction unspecified: border not changed
 	penetrate(end, direction = -1, start = null){
@@ -1086,8 +1158,21 @@ export class Application{
 		return changes_introduced;
 	}
 
-	//Returns: [change]; new state established immediately
+	execute_changes(changes){
+		for (var change of changes){
+			if (change[0] == 0){
+				var signature = change[1];
+				this.maps[this.current_state.map].points_data[signature].used = true;
+				if (this.current_focus == this.points[signature])
+					this.points[signature].set_focus_movables();
+				this.points[signature].proper_background();
+			}
+		}
+	}
+
+	//Returns: [change]; new state establishement deferred to the application
 	process_move_forward(e_key){
+		this.movement_processor.define_world(this.current_state, e_key);
 		var current_place = this.current_state.marked._coordinates;
 		var direction_int = this.current_state.direction;
 		var direction = integer_to_dir[this.current_state.direction];
@@ -1099,45 +1184,18 @@ export class Application{
 
 			for (var script of partial_scripts){
 				var proper_script = script.split(';');
-				if (proper_script[0] == 'W' && proper_script[1] == dir_to_cardinal[direction_proper]){
-					var old_direction = this.current_state.direction;
-					this.enforce_new_state(this.create_next_state(proper_script[2], proper_script[3], proper_script[4]??old_direction));
-					return [];
+				if (proper_script[0] == 'W' && proper_script[1].includes(dir_to_cardinal[direction_proper])){
+					var [new_state, changes] = this.movement_processor.wilderness_movement(proper_script);
+					this.enforce_new_state(new_state);
+					this.execute_changes(changes);
+					return changes;
 				}
 
-				if (proper_script[0] == 'WS' && proper_script[1] == dir_to_cardinal[direction_proper]){
-					var old_direction = this.current_state.direction;
-					var ln = this.current_state.map.length;
-
-					var map_column = this.current_state.map.charCodeAt(ln-2);
-					var map_row = this.current_state.map.charCodeAt(ln-1);
-					var start = this.current_state.map.substring(0, ln-2);
-
-					var coordinate_x = this.current_state.marked._coordinates['column'];
-					var coordinate_y = this.current_state.marked._coordinates['row'];
-
-					if (proper_script[1] == 'N'){
-						coordinate_y = 0;
-						map_row = map_row-1;
-					}
-					if (proper_script[1] == 'S'){
-						coordinate_y = 15;
-						map_row = map_row+1;
-					}
-
-					if (proper_script[1] == 'W'){
-						coordinate_x = 15;
-						map_column = map_column-1;
-					}
-					if (proper_script[1] == 'E'){
-						coordinate_x = 0;
-						map_column = map_column+1;
-					}
-					map_row = String.fromCharCode(map_row);
-					map_column = String.fromCharCode(map_column);
-					this.enforce_new_state({'map':`${start}${map_column}${map_row}`, 'signature':`${coordinate_y} ${coordinate_x}`, 'direction':old_direction});
-
-					return [];
+				if (proper_script[0] == 'WS' && proper_script[1].includes(dir_to_cardinal[direction_proper])){
+					var [new_state, changes] = this.movement_processor.wilderness_movement_simplified(proper_script);
+					this.enforce_new_state(new_state);
+					this.execute_changes(changes);
+					return changes;
 				}
 			}
 		}
@@ -1154,17 +1212,13 @@ export class Application{
 				var partial_scripts = new_place_data['scripts'].split('\n');
 				for (var script of partial_scripts){
 					var proper_script = script.split(';');
+					//TODO: Makeshift operation - awaiting for the advent of Movement_processor proper
 					if (proper_script[0] == 'T'){
-						this.enforce_new_state(this.create_next_state(proper_script[1], proper_script[2], this.current_state.direction));
-
-						if (!this.maps[this.current_state.map].points_data[this.current_state.marked._signature].used){
-							this.maps[this.current_state.map].points_data[this.current_state.marked._signature].used = true;
-							if (this.current_focus == this.points[this.current_state.marked._signature]) this.points[this.current_state.marked._signature].set_focus_movables();
-						}
-						changes_introduced.push([0, this.current_state.marked._signature]);
-						this.points[this.current_state.marked._signature].proper_background();
-
-						return changes_introduced;
+						this.movement_processor.define_world(this.current_state, e_key);
+						var [new_state, changes] = this.movement_processor.trap_movement(proper_script);
+						this.enforce_new_state(new_state);
+						this.execute_changes(changes);
+						return [...changes_introduced, ...changes];
 					}
 				}
 			}
@@ -1231,6 +1285,7 @@ export class Application{
 		else this._local_grid_default = [16, 16];
 
 		this.maps = {};
+		this.movement_processor = new Movement_processor(this.maps);
 		this.maps[this.current_state.map] = new Map({'title':'_unknown', 'grid_size': this._local_grid_default});
 		this.maps[this.current_state.map].initialize_data();
 
@@ -1320,7 +1375,8 @@ export class Application{
 						var proper_script = script.split(';');
 
 						if (proper_script[0] == 'P' && proper_script[1].includes(dir_to_cardinal[direction_int])){
-							base.enforce_new_state(base.create_next_state(proper_script[2], proper_script[3], proper_script[4]??base.current_state.direction));
+							base.movement_processor.define_world(base.current_state);
+							base.enforce_new_state(base.movement_processor.create_next_state(proper_script[2], proper_script[3], proper_script[4]??base.current_state.direction));
 							var changed = [];
 							if (!base.maps[base.current_state.map].points_data[base.current_state.marked._signature].used){
 								base.maps[base.current_state.map].points_data[base.current_state.marked._signature].used = true;
