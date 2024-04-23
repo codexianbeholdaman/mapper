@@ -134,16 +134,9 @@ export class Map{
 		return points_data;
 	}
 
-	//TODO: remove in favor of get_extremities
 	get_size(){
-		var all_points = Object.keys(this.points_data).map((x) => (x.split(' ').map((y) => Number(y))));
-
-		var max_x = 0, max_y = 0;
-		for (var coordinates of all_points){
-			if (coordinates[0] > max_y) max_y = coordinates[0];
-			if (coordinates[1] > max_x) max_x = coordinates[1];
-		}
-		return [max_y+1, max_x+1];
+		var [[y_min, x_min], [y_max, x_max]] = this.get_extremities();
+		return [y_max+1, x_max+1];
 	}
 
 	initialize_data(){
@@ -403,6 +396,7 @@ class Point{
 				var color = '#AA0000'; //For W, WS
 				if (proper_script[0] == 'P') color = '#008055';
 				if (proper_script[0] == 'R') color = '#9900E6';
+				if (proper_script[0] == 'C') color = '#f76b07';
 
 				var direction = proper_script[1];
 				var base_teleport = this._teleports;
@@ -807,6 +801,21 @@ class Movement_processor{
 		return [next_state, changes];
 	}
 
+	//Current solution may not work if borders are not at minimal/maximal used coordinates
+	cyclical_movement(proper_script){
+		var next_y = this.state.signature[0];
+		var next_x = this.state.signature[1];
+
+		var [max_y, max_x] = this.maps[this.state.map].general_data['map size'];
+		if (this.state.direction == 0 || this.state.direction == 2) next_y = (this.state.signature[0] == 0) ? max_y-1 : 0;
+		if (this.state.direction == 1) next_x = 0;
+		if (this.state.direction == 3) next_x = max_x-1;
+
+		var next_state = this.create_next_state(this.state.map, `${next_y} ${next_x}`, this.state.direction);
+		var changes = this.mark_if_unused(next_state);
+		return [next_state, changes];
+	}
+
 	wilderness_movement_simplified(proper_script){
 		var old_direction = this.state.direction;
 		var map = this.state.map;
@@ -817,21 +826,21 @@ class Movement_processor{
 		var map_row = map.charCodeAt(ln-1);
 		var start = map.substring(0, ln-2);
 
-
-		if (proper_script[1] == 'N'){
+		var cardinal_direction = dir_to_cardinal[old_direction];
+		if (cardinal_direction == 'N'){
 			coordinate_y = 0;
 			map_row = map_row-1;
 		}
-		if (proper_script[1] == 'S'){
+		if (cardinal_direction == 'S'){
 			coordinate_y = 15;
 			map_row = map_row+1;
 		}
 
-		if (proper_script[1] == 'W'){
+		if (cardinal_direction == 'W'){
 			coordinate_x = 15;
 			map_column = map_column-1;
 		}
-		if (proper_script[1] == 'E'){
+		if (cardinal_direction == 'E'){
 			coordinate_x = 0;
 			map_column = map_column+1;
 		}
@@ -1193,6 +1202,13 @@ export class Application{
 
 				if (proper_script[0] == 'WS' && proper_script[1].includes(dir_to_cardinal[direction_proper])){
 					var [new_state, changes] = this.movement_processor.wilderness_movement_simplified(proper_script);
+					this.enforce_new_state(new_state);
+					this.execute_changes(changes);
+					return changes;
+				}
+
+				if (proper_script[0] == 'C' && proper_script[1].includes(dir_to_cardinal[direction_proper])){
+					var [new_state, changes] = this.movement_processor.cyclical_movement(proper_script);
 					this.enforce_new_state(new_state);
 					this.execute_changes(changes);
 					return changes;
