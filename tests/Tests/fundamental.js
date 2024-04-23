@@ -6,6 +6,9 @@ game_configs.GAME_DATA['mock'] = {
 		'river':game_configs.create_terrain('#99FFFF', 'w'),
 		'muscle':game_configs.create_terrain('#9B7D4F', 'm'),
 	},
+	'map_types':{
+		'typo':game_configs.create_map_type('#AAAAAA', '#BBBBBB'),
+	},
 	'default map size':[16, 16],
 	'y_order':'ascending',
 	'backspace':'revert'
@@ -64,6 +67,7 @@ export var full_mock = `
 					<label for="translate" style="font-size:20px">Translate</label> <input name="translate" id="translate" style="width:200px; height:30px; font-size:20px"/>
 				</div>
 				<div id="cutter"></div>
+				<div id="map_types_box"></div>
 			</div>
 		</div>
 

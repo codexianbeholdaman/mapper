@@ -2,7 +2,14 @@ export function create_terrain(color, button){ //Export important for tests
 	return {
 		'color':color,
 		'button':button
-	}
+	};
+}
+
+export function create_map_type(inactive, hover){ //Export important for tests
+	return {
+		'inactive':inactive,
+		'hover':hover
+	};
 }
 
 export var GAME_DATA = {
@@ -69,10 +76,16 @@ export var GAME_DATA = {
 		'y_order':'ascending',
 		'backspace':'revert'
 	},
+
 	'Pools of Darkness':{
 		'terrains':{
 			'muscle':create_terrain('#9B7D4F', 'm'),
 		},
+		'map_types':{
+			'Kalistes':create_map_type('#205bc1', '#0a1e3f'),
+			'Moander':create_map_type('#9817b5', '#370542'),
+		},
+
 		'default map size':[16, 16],
 		'y_order':'ascending',
 		'backspace':'revert'

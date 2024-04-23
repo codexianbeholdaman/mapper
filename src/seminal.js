@@ -1,5 +1,5 @@
 import {_CONFIG_ACCESS_POINT_DATA, _CONFIG_GAME, _CONFIG_PREFIX} from './config.js';
-import {GAME_DATA} from './game_terrain.js';
+import {GAME_DATA, create_map_type} from './game_terrain.js';
 import {standard_style, map_element_style, arrowy_style, inputter_style, point_of_entry_style, marking_style, teleports_style, mini_teleport_style, assign_style_to_element, single_distance_teleport} from './presentation.js';
 
 const integer_to_dir = {
@@ -134,6 +134,7 @@ export class Map{
 		return points_data;
 	}
 
+	//TODO: remove in favor of get_extremities
 	get_size(){
 		var all_points = Object.keys(this.points_data).map((x) => (x.split(' ').map((y) => Number(y))));
 
@@ -167,6 +168,7 @@ export class Map{
 		_map_gd['map general'] = full_data['map general']??'';
 		this.points_data = this.terrainer(full_data['points']);
 		_map_gd['map size'] = full_data['map size']??this.get_size(); //can be done with get_extremities
+		_map_gd['map_type'] = full_data['map_type']??'_default';
 	}
 
 	construct_from_nothing(grid_size){
@@ -178,6 +180,7 @@ export class Map{
 		_map_gd['order'] = "";
 		_map_gd['exploration_blobber'] = true;
 		_map_gd['map size'] = [grid_size[0], grid_size[1]]; //TODO: Defaulting
+		_map_gd['map_type'] = '_default';
 	}
 
 	//proper_data fields: title, full_data, local_grid_default (ignored if full_data)
@@ -614,6 +617,140 @@ class Renamer{
 
 }
 
+export class Map_overlay{
+	static create_movement_overlay(letter){
+		var flier = document.createElement('div');
+		assign_style_to_element(flier, map_element_style);
+
+		flier.classList.add(`__movement_${letter}`);
+		flier.style.width = "50px";
+		flier.innerHTML = letter;
+		flier._type = letter;
+		flier.style.display = "none";
+		return flier;
+	}
+
+	get_colors(){
+		return this.app._local_map_types[this.app.maps[this.map_name]['general_data']['map_type']];
+	}
+
+	constructor(map_name, app){
+		this.app = app;
+		var map_overlay = document.createElement('div');
+		var new_map_element = document.createElement('div');
+		new_map_element.id = `__map ${map_name}`;
+		new_map_element.classList.add(`__map`);
+		map_overlay.classList.add(`__overlay`);
+
+		var flier = Map_overlay.create_movement_overlay('F');
+		var teleporter = Map_overlay.create_movement_overlay('T');
+
+		var changer = document.createElement('div');
+		var text = document.createElement('span');
+		map_overlay.classList.add('map_overlay');
+
+		assign_style_to_element(changer, {
+			'position':'absolute', 
+			'backgroundColor':'rgba(0, 0, 0, 0)',
+			'top':'5px',
+			'right':'5px',
+			'width':'15px',
+			'height':'15px',
+			'borderRadius':'100%'
+		});
+		this.map_name = map_name;
+
+		text.textContent = map_name;
+		new_map_element.appendChild(changer);
+		new_map_element._entry = app;
+		new_map_element.onclick = function(){
+			var app = this._entry;
+			app.change_map(this.base.map_name);
+		};
+
+		new_map_element.onmouseover = function(){
+			var app = this._entry;
+			if (app.current_state.map != this.base.map_name) this.style['backgroundColor'] = this.base.get_colors()['hover'];
+		}
+		new_map_element.onmouseout = function(){
+			var app = this._entry;
+			if (app.current_state.map != this.base.map_name) this.style['backgroundColor'] = this.base.get_colors()['inactive'];
+		}
+
+		assign_style_to_element(new_map_element, map_element_style);
+		new_map_element.style.position = 'relative';
+
+		map_overlay.appendChild(new_map_element);
+		map_overlay.appendChild(flier);
+		map_overlay.appendChild(teleporter);
+
+		new_map_element.appendChild(text);
+		this._text = text;
+		this._element = new_map_element;
+		this._element.base = this;
+
+		this._changer = changer;
+		this._fly = flier;
+		this._fly.base = this;
+
+		this._teleport = teleporter;
+		this._teleport.base = this;
+		this._overlay = map_overlay;
+
+		this._overlay.base = this;
+		this.deactivate();
+	}
+
+	update_part(map_name, movement){
+		var _map_gd = this.app.maps[map_name]['general_data'];
+		var element = this['_' + movement];
+
+		if (!_map_gd[movement] || _map_gd[movement] == '') element.style.display = 'none';
+		else if (_map_gd[movement]!='undefined'){
+			element.style.display = 'inline-block';
+			element._entry = this.app;
+			element.onmouseover = function(){this.style.backgroundColor = this.base.get_colors()['hover'];};
+			element.onmouseout = function(){this.style.backgroundColor = this.base.get_colors()['inactive'];};
+			element.style.backgroundColor = this.get_colors()['inactive'];
+
+			element.onclick = function(){
+				var app = this._entry;
+				var new_direction, new_place;
+
+				if (this._type == 'F'){
+					new_direction = app.current_state.direction;
+					if (new_direction == -1) new_direction = 0; //By default - northern
+					new_place = _map_gd[movement];
+				}
+				else{
+					var _tmp = _map_gd[movement].split(';');
+					new_direction = cardinal_to_dir[_tmp[1]];
+					new_place = _tmp[0];
+				}
+
+				var map_proper = app.maps[this.base.map_name];
+				if (!map_proper.points_data[new_place].used) map_proper.points_data[new_place].used = true; //TODO: acknowledge in subsequent changes
+
+				app.enforce_new_state({'map':this.base.map_name, 'direction':new_direction, 'signature':new_place});
+			}
+		}
+	}
+
+	set_changer(){
+		if (this.app.maps[this.map_name]['is_map_changed']) 
+			this._changer.style.backgroundColor = '#88CC00';
+		else
+			this._changer.style.backgroundColor = 'rgba(0,0,0,0)';
+	}
+
+	activate(){
+		this._element.style.backgroundColor = '#000000';
+	}
+	deactivate(){
+		this._element.style.backgroundColor = this.get_colors()['inactive'];
+	}
+}
+
 export class Application{
 	checkboxes_terrains(){
 		var terrains_div = document.getElementById('terrains');
@@ -633,6 +770,25 @@ export class Application{
 		}
 	}
 
+	radios_map_types(){
+		var map_types_div = this.controls.map_types_box;
+		for (var map_type in this._local_map_types){
+			var _input = document.createElement('input');
+			_input.type = 'radio';
+			_input.name = 'map_types';
+			_input.value = map_type;
+			_input.id = `map_type_` + map_type;
+
+			var _label = document.createElement('label');
+			_label.innerHTML = map_type[0].toUpperCase() + map_type.slice(1);
+			_label.htmlFor = `map_type_` + map_type;
+
+			map_types_div.appendChild(_input);
+			map_types_div.appendChild(_label);
+			this.controls['map_types'][map_type] = _input;
+		}
+	}
+
 	update_presentation(current_state){
 		if (!this.current_state['marked']) return;
 		this.current_state['marked']._arrow.innerHTML = dir_to_arrow[this.current_state.direction];
@@ -640,10 +796,7 @@ export class Application{
 
 	set_changer(map){
 		if (map == '_unknown') return;
-		if (this.maps[map]['is_map_changed']) 
-			this.map_element_overlays[map]._changer.style.backgroundColor = '#88CC00';
-		else
-			this.map_element_overlays[map]._changer.style.backgroundColor = 'rgba(0,0,0,0)';
+		this.map_element_overlays[map].set_changer();
 	}
 
 	changer(map=null){
@@ -660,43 +813,10 @@ export class Application{
 		this.set_changer(map);
 	}
 
-	update_part(map_name, movement, element){
-		var _map_gd = this.maps[map_name]['general_data'];
-		if (!_map_gd[movement] || _map_gd[movement] == '') element.style.display = 'none';
-
-		else if (_map_gd[movement]!='undefined'){
-			element.style.display = 'inline-block';
-			element.onmouseover = function(){this.style.backgroundColor = '#440000';};
-			element.onmouseout = function(){this.style.backgroundColor = '#880000';};
-
-			element._entry = this;
-			element.onclick = function(){
-				var base = this._entry;
-				var new_direction, new_place;
-
-				if (this._type == 'F'){
-					new_direction = base.current_state.direction;
-					if (new_direction == -1) new_direction = 0; //By default - northern
-					new_place = _map_gd[movement];
-				}
-				else{
-					var _tmp = _map_gd[movement].split(';');
-					new_direction = cardinal_to_dir[_tmp[1]];
-					new_place = _tmp[0];
-				}
-
-				var map_proper = base.maps[this._overlay._element._map_name];
-				if (!map_proper.points_data[new_place].used) map_proper.points_data[new_place].used = true;
-
-				base.enforce_new_state({'map':this._overlay._element._map_name, 'direction':new_direction, 'signature':new_place});
-			}
-		}
-	}
-
 	update_flight(map_name){
 		if (map_name == '_unknown') return;
-		this.update_part(map_name, 'fly', this.map_element_overlays[map_name]._flier);
-		this.update_part(map_name, 'teleport', this.map_element_overlays[map_name]._teleporter);
+		this.map_element_overlays[map_name].update_part(map_name, 'fly');
+		this.map_element_overlays[map_name].update_part(map_name, 'teleport');
 	}
 
 	save_focus(map_switch=false){
@@ -727,6 +847,11 @@ export class Application{
 		}
 	}
 
+	get_checked_map_type(){
+		var radios = this.controls.map_types_box.querySelectorAll('input[name="map_types"]:checked');
+		return (radios.length>0) ? radios[0].value: null;
+	}
+
 	save_map_data(){
 		this.save_focus(true);
 		var _map_gd = this.maps[this.current_state.map]['general_data'];
@@ -735,6 +860,7 @@ export class Application{
 		_map_gd['fly'] = this.controls.fly.value;
 		_map_gd['teleport'] = this.controls.teleport.value;
 		_map_gd['exploration_blobber'] = this.controls.blobber.checked;
+		_map_gd['map_type'] = this.get_checked_map_type();
 
 		var old_map_size = _map_gd['map size'];
 		var new_map_size = this.controls.map_size.value.split(',').map((x) => Number(x));
@@ -762,6 +888,7 @@ export class Application{
 		this.controls.map_size.value = _map_gd['map size'];
 		this.controls.blobber.checked = _map_gd['exploration_blobber'];
 		this.controls.overhead.checked = !_map_gd['exploration_blobber'];
+		this.controls.map_types[_map_gd['map_type']].checked = true;
 
 		this.controls.map_general.value = _map_gd['map general']??'';
 		this.controls.order.value = _map_gd['order']??'';
@@ -783,9 +910,9 @@ export class Application{
 			this.current_focus = null;
 		}
 		if (this.map_element_overlays[this.current_state.map]){
-			this.map_element_overlays[this.current_state.map]._element.style.backgroundColor = '#880000';
+			this.map_element_overlays[this.current_state.map].deactivate();
 		}
-		this.map_element_overlays[new_map]._element.style.backgroundColor = '#000000';
+		this.map_element_overlays[new_map].activate();
 		this.update_flight(this.current_state.map);
 
 		this.current_state['map'] = new_map;
@@ -798,8 +925,8 @@ export class Application{
 		if (old_map_name == new_map_name)
 			return;
 		if (this.map_element_overlays[old_map_name]){
-			this.map_element_overlays[old_map_name]._element.getElementsByTagName('span')[0].innerHTML = new_map_name;
-			this.map_element_overlays[old_map_name]._element._map_name = new_map_name;
+			this.map_element_overlays[old_map_name]._text.innerHTML = new_map_name;
+			this.map_element_overlays[old_map_name].map_name = new_map_name;
 
 			this.maps[new_map_name] = this.maps[old_map_name];
 			delete this.maps[old_map_name];
@@ -812,84 +939,12 @@ export class Application{
 			this.current_state.map = new_map_name;
 	}
 
-	create_movement_overlay(letter){
-		var flier = document.createElement('div');
-		assign_style_to_element(flier, map_element_style);
-		flier.classList.add(`__movement_${letter}`);
-		flier.style.width = "50px";
-		flier.innerHTML = letter;
-		flier._type = letter;
-		flier.style.display = "none";
-		return flier;
-	}
-
-	create_new_map_overlay(map_name){
-		var map_overlay = document.createElement('div');
-		var new_map_element = document.createElement('div');
-		new_map_element.id = `__map ${map_name}`;
-		new_map_element.classList.add(`__map`);
-		map_overlay.classList.add(`__overlay`);
-
-		var flier = this.create_movement_overlay('F');
-		var teleporter = this.create_movement_overlay('T');
-
-		var changer = document.createElement('div');
-		var text = document.createElement('span');
-		map_overlay.classList.add('map_overlay');
-
-		assign_style_to_element(changer, {
-			'position':'absolute', 
-			'backgroundColor':'rgba(0, 0, 0, 0)',
-			'top':'5px',
-			'right':'5px',
-			'width':'15px',
-			'height':'15px',
-			'borderRadius':'100%'
-		});
-		new_map_element._map_name = map_name;
-
-		text.textContent = map_name;
-		new_map_element.appendChild(changer);
-		new_map_element._entry = this;
-		new_map_element.onclick = function(){
-			var base = this._entry;
-			base.change_map(this._map_name);
-		};
-
-		new_map_element.onmouseover = function(){
-			var base = this._entry;
-			if (base.current_state.map != this._map_name) this.style['backgroundColor'] = '#440000';
-		}
-		new_map_element.onmouseout = function(){
-			var base = this._entry;
-			if (base.current_state.map != this._map_name) this.style['backgroundColor'] = '#880000';
-		}
-
-		assign_style_to_element(new_map_element, map_element_style);
-		new_map_element.style.position = 'relative';
-
-		map_overlay.appendChild(new_map_element);
-		map_overlay.appendChild(flier);
-		map_overlay.appendChild(teleporter);
-
-		new_map_element.appendChild(text);
-		map_overlay._text = text;
-		map_overlay._element = new_map_element;
-		map_overlay._changer = changer;
-		map_overlay._flier = flier;
-		map_overlay._flier._overlay = map_overlay;
-
-		map_overlay._teleporter = teleporter;
-		map_overlay._teleporter._overlay = map_overlay;
-		return map_overlay;
-	}
-
 	create_data_dump(){
 		var map_name = this.current_state['map'];
 		this.save_map_data();
 		var save_data = this.maps[map_name]['general_data'];
 
-		var to_save = {'title':map_name, 'ground truth':save_data['ground truth'], 'fly':save_data['fly'], 'exploration_blobber':save_data['exploration_blobber'], 'teleport':save_data['teleport'], 'map size':save_data['map size'], 'map general':save_data['map general'], 'order':save_data['order'], 'points':{}};
+		var to_save = {'title':map_name, 'ground truth':save_data['ground truth'], 'fly':save_data['fly'], 'map_type':save_data['map_type'], 'exploration_blobber':save_data['exploration_blobber'], 'teleport':save_data['teleport'], 'map size':save_data['map size'], 'map general':save_data['map general'], 'order':save_data['order'], 'points':{}};
 
 		for (var point_coordinate in this.maps[map_name]['points_data']){
 			var point = this.maps[map_name]['points_data'][point_coordinate];
@@ -907,7 +962,6 @@ export class Application{
 		}
 		return to_save;
 	}
-
 
 	create_map_adder(){
 		var add_map = this.controls.map_adder_input;
@@ -929,10 +983,10 @@ export class Application{
 
 			base.maps[map_name] = new Map({'title':map_name, 'grid_size':base._local_grid_default});
 
-			var map_overlay = base.create_new_map_overlay(map_name);
+			var map_overlay = new Map_overlay(map_name, base);
 			base.map_element_overlays[map_name] = map_overlay;
 
-			base.controls.maps_list.appendChild(map_overlay);
+			base.controls.maps_list.appendChild(map_overlay._overlay);
 
 			base.maps[map_name].initialize_data();
 			base.change_map(map_name);
@@ -979,7 +1033,6 @@ export class Application{
 		if (typeof direction == 'number') return direction;
 		if (direction == 'R') return (this.current_state.direction+2)%4;
 		return cardinal_to_dir[direction];
-
 	}
 	create_next_state(map, signature, direction){
 		return {'map':this.determine_next_map(map), 'signature':this.determine_next_signature(signature), 'direction':this.determine_next_direction(direction)};
@@ -1146,6 +1199,8 @@ export class Application{
 
 			'blobber': document.getElementById('model_blobber'),
 			'overhead': document.getElementById('model_overhead'),
+			'map_types_box': document.getElementById('map_types_box'),
+			'map_types':{},
 
 			'map_adder_input': document.getElementById('map_adder_input'),
 			'map_adder_button': document.getElementById('map_adder_button'),
@@ -1154,16 +1209,15 @@ export class Application{
 			'renamer': document.getElementById('rename')
 		};
 
-		if (_CONFIG_GAME in GAME_DATA){
-			this._game_config = GAME_DATA[_CONFIG_GAME];
-		}
-		else{
-			this._game_config = GAME_DATA['FALLBACK'];
-		}
+		if (_CONFIG_GAME in GAME_DATA) this._game_config = GAME_DATA[_CONFIG_GAME];
+		else this._game_config = GAME_DATA['FALLBACK'];
 
+		this._local_terrains = this._game_config['terrains'] ?? {};
+		this._local_map_types = this._game_config['map_types'] ?? {};
+		this._local_map_types['_default'] = create_map_type('#880000', '#440000');
 
-		this._local_terrains = this._game_config['terrains'];
 		this.checkboxes_terrains();
+		this.radios_map_types();
 		this.map_element_overlays = {};
 
 		this.current_state = {
@@ -1199,7 +1253,7 @@ export class Application{
 			base.maps[base.current_state.map]['general_data'].order = base.controls['order'].value;
 
 			if (base.current_state.map != '_unknown')
-				base.map_element_overlays[base.current_state.map]._element.style.backgroundColor = '#880000';
+				base.map_element_overlays[base.current_state.map].deactivate();
 
 			var sorted_maps = [];
 			for (var map_name in base.maps){
@@ -1208,18 +1262,19 @@ export class Application{
 			}
 			sorted_maps.sort();
 
-			var sorted_divs = document.getElementsByClassName('map_overlay');
+			var sorted_overlays = [...document.getElementsByClassName('map_overlay')].map(x => x.base);
 			for (var [index, map_data] of sorted_maps.entries()){
-				var map_name = map_data[1];
-				sorted_divs[index]._element._map_name = map_name;
-				sorted_divs[index]._text.innerHTML = map_name;
-				base.map_element_overlays[map_name] = sorted_divs[index];
+				var map_name = map_data[1]; //TODO: map name affix
+				sorted_overlays[index].map_name = map_name;
+				sorted_overlays[index]._text.innerHTML = map_name;
+				base.map_element_overlays[map_name] = sorted_overlays[index];
 				base.update_flight(map_name);
 				base.set_changer(map_name);
+				sorted_overlays[index].deactivate();
 			}
 
 			if (base.current_state.map != '_unknown')
-				base.map_element_overlays[base.current_state.map]._element.style.backgroundColor = 'black';
+				base.map_element_overlays[base.current_state.map].activate();
 		}
 
 		document._entry = this;
@@ -1244,7 +1299,6 @@ export class Application{
 				base.subsequent_changes.push([Object.assign({}, base.current_state), changes_introduced]);
 				return;
 			}
-
 
 			if (e.key == 'ArrowUp' || (e.key == 'ArrowDown' && !base.revert)){
 				changes_introduced = base.process_move_forward(e.key);
@@ -1397,9 +1451,9 @@ export class Application{
 
 					if (map_name in base.map_element_overlays) base.dechanger(map_name);
 					else{
-						var map_overlay = base.create_new_map_overlay(map_name);
+						var map_overlay = new Map_overlay(map_name, base);
 						base.map_element_overlays[map_name] = map_overlay;
-						base.controls.maps_list.appendChild(map_overlay);
+						base.controls.maps_list.appendChild(map_overlay._overlay);
 						base.update_flight(map_name);
 					}
 				});
