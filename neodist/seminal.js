@@ -1181,14 +1181,14 @@ class Application{
 
 			for (var script of partial_scripts){
 				var proper_script = script.split(';');
-				if (proper_script[0] == 'W' && proper_script[1] == dir_to_cardinal[direction_proper]){
+				if (proper_script[0] == 'W' && proper_script[1].includes(dir_to_cardinal[direction_proper])){
 					var [new_state, changes] = this.movement_processor.wilderness_movement(proper_script);
 					this.enforce_new_state(new_state);
 					this.execute_changes(changes);
 					return changes;
 				}
 
-				if (proper_script[0] == 'WS' && proper_script[1] == dir_to_cardinal[direction_proper]){
+				if (proper_script[0] == 'WS' && proper_script[1].includes(dir_to_cardinal[direction_proper])){
 					var [new_state, changes] = this.movement_processor.wilderness_movement_simplified(proper_script);
 					this.enforce_new_state(new_state);
 					this.execute_changes(changes);
