@@ -79,3 +79,7 @@ textarea{
 #rename:hover{
 	background-color:#440000;
 }
+
+#killer{background-color:#880000;}
+#killer.active{background-color:#000000;}
+#killer:hover{background-color:#440000;}

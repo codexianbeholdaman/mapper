@@ -2,3 +2,4 @@ github.txt
 map_data/
 node_modules/
 dist/
+*.swp

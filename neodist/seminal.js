@@ -95,6 +95,7 @@ class Map{
 	}
 
 	get_extremities(){
+		console.log(this.general_data);
 		var size_x = this.general_data['map size'][1], size_y = this.general_data['map size'][0];
 		var max_x=0, max_y=0, min_y=size_y, min_x=size_x;
 
@@ -131,7 +132,7 @@ class Map{
 		return points_data;
 	}
 
-	//TODO: remove in favor of get_extremities
+	//TODO: replace with get_extremities (but before that: cleanse code: get_extremities relise on it)
 	get_size(){
 		var all_points = Object.keys(this.points_data).map((x) => (x.split(' ').map((y) => Number(y))));
 
@@ -264,6 +265,30 @@ class Point{
 		this.base.controls.input_used.checked = this.base.maps[this.base.current_state.map]['points_data'][this.base.current_focus._signature].used;
 	}
 
+	cell_killer(){
+		this.base.maps[this.base.current_state.map]['points_data'][this._signature] = Map.create_basic_point();
+
+		var [coordinate_y, coordinate_x] = this._signature.split(' ').map(x => Number(x));
+		var map_size = this.base.maps[this.base.current_state.map].general_data['map size'];
+
+		var y_above = this.base.ascending_y?(coordinate_y-1):(coordinate_y+1);
+		var y_below = this.base.ascending_y?(coordinate_y+1):(coordinate_y-1);
+		var to_purge = [[coordinate_y, coordinate_x-1, 'E'],
+			[coordinate_y, coordinate_x+1, 'W'],
+			[y_above, coordinate_x, 'S'],
+			[y_below, coordinate_x, 'N']]
+
+		for (var [cy, cx, direction] of to_purge){
+			if (cx>=0 && cy>=0 && cy<map_size[0] && cx<map_size[1]){
+				var coordinates = `${cy} ${cx}`;
+				this.base.maps[this.base.current_state.map]['points_data'][coordinates].borders[cardinal_to_dir[direction]] = false;
+				this.base.points[coordinates].update_field();
+			}
+		}
+
+		this.update_field();
+	}
+
 	constructor(application){
 		this.element = document.createElement('div');
 
@@ -298,6 +323,11 @@ class Point{
 
 		this.element.addEventListener('click', function(){
 			var base = this.general.base;
+			if (base.killer.active){
+				this.general.cell_killer();
+				return;
+			}
+
 			if (base.controls.ground_truth.checked && !base.maps[base.current_state.map]['points_data'][this._signature].used) return;
 			if (base.current_state.marked) base.current_state.marked.clear_pointer();
 			
@@ -600,9 +630,7 @@ class Renamer{
 	}
 
 	constructor(element, app){
-		this.renamer = element;
 		this.active = false;
-
 		this.app = app;
 		this.element = element;
 
@@ -612,6 +640,33 @@ class Renamer{
 			else this._entry.deactivate();
 		};
 	}
+}
+
+class Killer{
+	activate(){
+		this.active = true;
+		this.element.classList.add('active');
+		this.app.grid.grid.style.cursor = 'cell';
+	}
+
+	deactivate(){
+		this.active = false;
+		this.element.classList.remove('active');
+		this.app.grid.grid.style.cursor = 'default';
+	}
+
+	constructor(element, app){
+		this.active = false;
+		this.app = app;
+		this.element = element;
+
+		element._entry = this;
+		element.onclick = function(){
+			if (!this._entry.active) this._entry.activate();
+			else this._entry.deactivate();
+		};
+	}
+
 
 }
 
@@ -1280,6 +1335,7 @@ class Application{
 			'map_adder_button': document.getElementById('map_adder_button'),
 			'translate': document.getElementById('translate'),
 			'cutter': document.getElementById('cutter'),
+			'killer': document.getElementById('killer'),
 			'renamer': document.getElementById('rename')
 		};
 
@@ -1537,6 +1593,7 @@ class Application{
 		}
 
 		this.renamer = new Renamer(this.controls.renamer, this);
+		this.killer = new Killer(this.controls.killer, this);
 
 		this.controls.cutter._entry = this;
 		this.controls.cutter.onclick = function(){

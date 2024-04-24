@@ -25,3 +25,8 @@ for script in scripts:
 
 with open(f'{build_directory}/index.html', 'w') as neue_index:
     neue_index.write(parsed_base.prettify())
+
+with open(f'{build_directory}/style.css', 'w') as neue_css, open(f'src/style.css', 'r') as old_css:
+    css_file = old_css.read();
+    neue_css.write(css_file)
+
