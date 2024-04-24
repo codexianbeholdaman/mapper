@@ -3,9 +3,10 @@ Automapper for Might & Magic 1, 2, World of Xeen, and some Gold Box titles.
 # Overview
 To run the mapper, either:
 1. Run *neodist/index.html* (probably in a browser).
-2. Run *listener.py* (perhaps after tinkering with it, depending on the operating system).
-or
-1. Run *selen.py* after changing the value of *GECKODRIVER_PATH* variable within this file to the path to your geckodriver.
+2. Run *listener.py* (perhaps after tinkering with it, depending on the operating system).  
+
+or  
+1. Run *selen.py* after changing the value of *GECKODRIVER_PATH* variable within *selen.py* file to the path to your geckodriver.
 
 # Quickstart
 1. Create a game entry in a GAME\_DATA object looking like this:  
@@ -205,4 +206,3 @@ In order to use the auto part of automapper, one needs:
    ```bash
    pip install pynput selenium
    ```
-
