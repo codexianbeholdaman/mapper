@@ -9,17 +9,17 @@ or
 
 # Quickstart
 1. Create a game entry in a GAME\_DATA object looking like this:  
-```
-	'Game name':{
-		'terrains':{
-		},
-		'default map size':[16, 16],
-	}
+```js
+'Game name':{
+	'terrains':{
+	},
+	'default map size':[16, 16],
+}
 ```  
 Where the 'default map size' option denotes default size of a map (this is relevant only for new maps, you can change it later).
 
 2. In a neodist/config.js file, set variable `_CONFIG_GAME` to the same game name (like this):  
-```
+```js
 const _CONFIG_GAME = 'Game name';
 ```
 3. Run *index.html* in a browser. Create a map by entering the name and clicking on a '+' button.
@@ -54,11 +54,12 @@ For example, if there are four maps:
 
 Then the order of maps after clicking the button *Order* will be c,d,b,a  
 
-You can change the color of a map overlay by adding line key *map_types* to the game data in *neodist/game_terrains.js* file - like this```
+You can change the color of a map overlay by adding line key *map_types* to the game data in *neodist/game_terrains.js* file - like this
+```js
 'map_types':{
-			'Kalistes':create_map_type('#205bc1', '#0a1e3f'),
-			'Moander':create_map_type('#9817b5', '#370542'),
-		},
+	'Kalistes':create_map_type('#205bc1', '#0a1e3f'),
+	'Moander':create_map_type('#9817b5', '#370542'),
+},
 ```
 The two values are the color values of the overlay if it's inactive or hovered over. You can always switch it to the standard *_default* overlay.
 
@@ -193,13 +194,14 @@ In order to use the auto part of automapper, one needs:
 2. Python needs to be installed.
 3. Geckodriver, available here:
    https://github.com/mozilla/geckodriver/releases
-   In order to make it work, you may need to configure certain things: try running ```
+   In order to make it work, you may need to configure certain things: try running
+   ```bash
    python check_selen.py
    ```
-   changing the variable GECKODRIVER_PATH in this file (or something else if you feel adventurous) until it works (if it's empty an string (i.e., GECKODRIVER_PATH=''), this value is ignored - such setting should work on most operating systems). When it works, change the variable with the same name in the *selen.py* file to this value.
-   The current value of the variable stems from this odd problem (without any elegant solution):
+   changing the variable GECKODRIVER_PATH in this file (or something else if you feel adventurous) until it works (if it's empty an string (i.e., GECKODRIVER_PATH=''), this value is ignored - such setting should work on most operating systems). When it works, change the variable with the same name in the *selen.py* file to this value.  
+   The current value of the variable stems from this odd problem (without any elegant solution):  
    https://stackoverflow.com/a/76852633
-4. pynput and selenium libraries: they can be installed by typing in the terminal:
+5. pynput and selenium libraries: they can be installed by typing in the terminal:
    ```bash
    pip install pynput selenium
    ```
