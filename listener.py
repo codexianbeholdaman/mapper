@@ -12,15 +12,15 @@ keys_mapping = {
         keyboard.KeyCode.from_char('y'): 'y',
         keyboard.KeyCode.from_char('-'): 'j',
         keyboard.KeyCode.from_char('+'): 't',
-        keyboard.KeyCode.from_char('/'): 'd',
-        keyboard.KeyCode.from_char('*'): 'w',
-        keyboard.KeyCode.from_char('.'): 'i',
-        keyboard.KeyCode.from_char(','): 'b',
-        keyboard.KeyCode.from_char('['): 'm',
-        keyboard.KeyCode.from_char(']'): 'f',
-        keyboard.KeyCode.from_char('='): 'l',
-        keyboard.KeyCode.from_char('\''): 'q',
-        keyboard.KeyCode.from_char('\\'): 'c',
+        #keyboard.KeyCode.from_char('/'): 'd',
+        #keyboard.KeyCode.from_char('*'): 'w',
+        #keyboard.KeyCode.from_char('.'): 'i',
+        #keyboard.KeyCode.from_char(','): 'b',
+        #keyboard.KeyCode.from_char('['): 'm',
+        #keyboard.KeyCode.from_char(']'): 'f',
+        #keyboard.KeyCode.from_char('='): 'l',
+        #keyboard.KeyCode.from_char('\''): 'q',
+        #keyboard.KeyCode.from_char('\\'): 'c',
 }
 
 dead = False
@@ -33,5 +33,3 @@ def on_press(key):
 
 with keyboard.Listener(on_press=on_press) as listener:
     listener.join()
-
-listener.start()

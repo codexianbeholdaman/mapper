@@ -67,6 +67,7 @@ export var full_mock = `
 					<label for="translate" style="font-size:20px">Translate</label> <input name="translate" id="translate" style="width:200px; height:30px; font-size:20px"/>
 				</div>
 				<div id="cutter"></div>
+				<div id="killer"></div>
 				<div id="map_types_box"></div>
 			</div>
 		</div>

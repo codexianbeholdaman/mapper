@@ -95,7 +95,6 @@ class Map{
 	}
 
 	get_extremities(){
-		console.log(this.general_data);
 		var size_x = this.general_data['map size'][1], size_y = this.general_data['map size'][0];
 		var max_x=0, max_y=0, min_y=size_y, min_x=size_x;
 
