@@ -5,5 +5,8 @@ jobs:
   testing:
     runs-on: ubuntu-latest
     steps:
+      - name: Nodejs garbage
+        with:
+          node-version: '20.x'
       - run: npm install
       - run: npm t
