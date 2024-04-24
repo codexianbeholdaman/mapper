@@ -1,0 +1,9 @@
+name: mapper
+run-name: also_mapper
+on: [push]
+jobs:
+  testing:
+    runs-on: ubuntu-latest
+    steps:
+      - run: npm install
+      - run: npm t
