@@ -41,6 +41,18 @@ const arrow_to_dir = {
 	'ArrowLeft':3
 };
 
+function show_images(text, images_box){
+	for (var image of text.split('\n')){
+		if (image){
+			var pic = document.createElement('img');
+			pic.src = '../' + _CONFIG_PREFIX + image;
+			pic.alt = "image should be here";
+			pic.width = "600";
+			images_box.appendChild(pic);
+		}
+	}
+}
+
 export class Map{
 	static create_basic_point(){
 		return {'used':false, 'borders':[false, false, false, false], 'input':'', 'general':'', 'scripts':'', 'images':'', 'terrains':new Set()};
@@ -169,6 +181,7 @@ export class Map{
 		this.points_data = this.terrainer(full_data['points']);
 		_map_gd['map size'] = full_data['map size']??this.get_size(); //can be done with get_extremities
 		_map_gd['map_type'] = full_data['map_type']??'_default';
+		_map_gd['images'] = full_data['images']??'';
 	}
 
 	construct_from_nothing(grid_size){
@@ -181,6 +194,7 @@ export class Map{
 		_map_gd['exploration_blobber'] = true;
 		_map_gd['map size'] = [grid_size[0], grid_size[1]]; //TODO: Defaulting
 		_map_gd['map_type'] = '_default';
+		_map_gd['images'] = '';
 	}
 
 	//proper_data fields: title, full_data, local_grid_default (ignored if full_data)
@@ -264,7 +278,7 @@ class Point{
 
 	//If a move occured over field with a focus, update only those; TODO: needs borders
 	set_focus_movables(){
-		this.base.controls.input_used.checked = this.base.maps[this.base.current_state.map]['points_data'][this.base.current_focus._signature].used;
+		this.base.controls.point.used.checked = this.base.maps[this.base.current_state.map]['points_data'][this.base.current_focus.signature].used;
 	}
 
 	cell_killer(){
@@ -330,7 +344,7 @@ class Point{
 				return;
 			}
 
-			if (base.controls.ground_truth.checked && !base.maps[base.current_state.map]['points_data'][this._signature].used) return;
+			if (base.controls.map_general.ground_truth.checked && !base.maps[base.current_state.map]['points_data'][this._signature].used) return;
 			if (base.current_state.marked) base.current_state.marked.clear_pointer();
 			
 			base.current_state.direction = 0;
@@ -352,40 +366,34 @@ class Point{
 		this.element.addEventListener(_CONFIG_ACCESS_POINT_DATA, function(_event){
 			var base = this.general.base;
 			if (_CONFIG_ACCESS_POINT_DATA == 'contextmenu') _event.preventDefault();
-			point_images.innerHTML = '';
-			if (base.current_focus){
-				base.current_focus._marking.style.background = 'rgba(0, 0, 0, 0)';
+			base.controls.point.images_box.innerHTML = '';
+			if (base.current_focus.active){
+				base.current_focus.marked._marking.style.background = 'rgba(0, 0, 0, 0)';
 				base.save_focus();
-				base.current_focus._input.innerHTML = shorthand_text.value;
+				base.current_focus.marked._input.innerHTML = shorthand_text.value;
 			}
 
-			base.current_focus = this.general;
-			base.current_focus._marking.style.background = 'linear-gradient(to right bottom, #AA0000 50%, rgba(0, 0, 0, 0) 50%)';
-			base.controls.images_text.value = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].images;
-			base.controls.scripts_text.value = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].scripts;
-			base.controls.shorthand_text.value = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].input;
-			base.controls.general_text.value = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].general;
+			//FIXME NOW - set current focus
+			base.current_focus.set(base.current_state.map, this.general._signature);
+			base.current_focus.marked._marking.style.background = 'linear-gradient(to right bottom, #AA0000 50%, rgba(0, 0, 0, 0) 50%)';
+			base.controls.point.images.value = base.maps[base.current_state.map]['points_data'][base.current_focus.signature].images;
+			base.controls.point.scripts.value = base.maps[base.current_state.map]['points_data'][base.current_focus.signature].scripts;
+			base.controls.point.shorthand.value = base.maps[base.current_state.map]['points_data'][base.current_focus.signature].input;
+			base.controls.point.general.value = base.maps[base.current_state.map]['points_data'][base.current_focus.signature].general;
 
 			for (var terrain in base._local_terrains){
-				if (base.maps[base.current_state.map]['points_data'][base.current_focus._signature]['terrains'].has(terrain)) base.controls['terrains'][terrain].checked = true;
-				else base.controls['terrains'][terrain].checked = false;
+				if (base.maps[base.current_state.map]['points_data'][base.current_focus.signature]['terrains'].has(terrain)) base.controls.point.terrains[terrain].checked = true;
+				else base.controls.point.terrains[terrain].checked = false;
 			}
 
 			//base.controls.input_used.checked = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].used;
 			this.general.set_focus_movables();
 			var ordering = ['N', 'E', 'S', 'W'];
 			for (var index of [0, 1, 2, 3]){
-				base.controls.input_borders[index].checked = base.maps[base.current_state.map]['points_data'][base.current_focus._signature].borders[cardinal_to_dir[ordering[index]]];
+				base.controls.point.borders[index].checked = base.maps[base.current_state.map]['points_data'][base.current_focus.signature].borders[cardinal_to_dir[ordering[index]]];
 			}
-			for (var image of base.maps[base.current_state.map]['points_data'][base.current_focus._signature].images.split('\n')){
-				if (image){
-					var pic = document.createElement('img');
-					pic.src = '../' + _CONFIG_PREFIX + image;
-					pic.alt = "image should be here";
-					pic.width = "600";
-					point_images.appendChild(pic);
-				}
-			}
+
+			show_images(base.maps[base.current_state.map]['points_data'][base.current_focus.signature].images, base.controls.point.images_box);
 		});
 	}
 
@@ -921,6 +929,24 @@ class Movement_processor{
 	}
 }
 
+class Focus{
+	constructor(app){
+		this.active = false;
+		this.app = app;
+	}
+
+	set(map, signature){
+		this.active = true;
+		this.map = map;
+		this.signature = signature;
+		this.marked = this.app.points[signature];
+	}
+
+	reset(){
+		this.active = false;
+	}
+}
+
 export class Application{
 	checkboxes_terrains(){
 		var terrains_div = document.getElementById('terrains');
@@ -936,12 +962,12 @@ export class Application{
 
 			terrains_div.appendChild(_input);
 			terrains_div.appendChild(_label);
-			this.controls['terrains'][terrain] = _input;
+			this.controls.point.terrains[terrain] = _input;
 		}
 	}
 
 	radios_map_types(){
-		var map_types_div = this.controls.map_types_box;
+		var map_types_div = this.controls.map_general.types_box;
 		for (var map_type in this._local_map_types){
 			var _input = document.createElement('input');
 			_input.type = 'radio';
@@ -955,7 +981,7 @@ export class Application{
 
 			map_types_div.appendChild(_input);
 			map_types_div.appendChild(_label);
-			this.controls['map_types'][map_type] = _input;
+			this.controls.map_general.types[map_type] = _input;
 		}
 	}
 
@@ -990,24 +1016,24 @@ export class Application{
 	}
 
 	save_focus(map_switch=false){
-		if (this.current_focus){
-			var coordinate = this.current_focus._signature;
+		if (this.current_focus.active){
+			var coordinate = this.current_focus.signature;
 			var past_point = Object.assign({}, this.maps[this.current_state.map]['points_data'][coordinate]);
 
-			this.maps[this.current_state.map]['points_data'][coordinate]['general'] = this.controls.general_text.value;
-			this.maps[this.current_state.map]['points_data'][coordinate]['scripts'] = this.controls.scripts_text.value;
-			this.maps[this.current_state.map]['points_data'][coordinate]['images'] = this.controls.images_text.value;
-			this.maps[this.current_state.map]['points_data'][coordinate]['input'] = this.controls.shorthand_text.value;
+			this.maps[this.current_state.map]['points_data'][coordinate]['general'] = this.controls.point.general.value;
+			this.maps[this.current_state.map]['points_data'][coordinate]['scripts'] = this.controls.point.scripts.value;
+			this.maps[this.current_state.map]['points_data'][coordinate]['images'] = this.controls.point.images.value;
+			this.maps[this.current_state.map]['points_data'][coordinate]['input'] = this.controls.point.shorthand.value;
 
 			for (var terrain in this._local_terrains){
-				if (this.controls['terrains'][terrain].checked) this.maps[this.current_state.map]['points_data'][coordinate]['terrains'].add(terrain);
+				if (this.controls.point.terrains[terrain].checked) this.maps[this.current_state.map]['points_data'][coordinate]['terrains'].add(terrain);
 				else this.maps[this.current_state.map]['points_data'][coordinate]['terrains'].delete(terrain);
 			}
 
-			this.maps[this.current_state.map]['points_data'][coordinate].used = this.controls.input_used.checked;
+			this.maps[this.current_state.map]['points_data'][coordinate].used = this.controls.point.used.checked;
 			var ordering = ['N', 'E', 'S', 'W'];
 			for (var index of [0, 1, 2, 3]){
-				 this.maps[this.current_state.map]['points_data'][coordinate].borders[cardinal_to_dir[ordering[index]]] = this.controls.input_borders[index].checked;
+				 this.maps[this.current_state.map]['points_data'][coordinate].borders[cardinal_to_dir[ordering[index]]] = this.controls.point.borders[index].checked;
 			}
 
 			if (Object.entries(this.maps[this.current_state.map]['points_data'][coordinate]).sort().toString() !== Object.entries(past_point).sort().toString())
@@ -1018,31 +1044,32 @@ export class Application{
 	}
 
 	get_checked_map_type(){
-		var radios = this.controls.map_types_box.querySelectorAll('input[name="map_types"]:checked');
+		var radios = this.controls.map_general.types_box.querySelectorAll('input[name="map_types"]:checked');
 		return (radios.length>0) ? radios[0].value: null;
 	}
 
 	save_map_data(){
 		this.save_focus(true);
 		var _map_gd = this.maps[this.current_state.map]['general_data'];
-		_map_gd['order'] = this.controls.order.value;
-		_map_gd['ground truth'] = this.controls.ground_truth.checked;
-		_map_gd['fly'] = this.controls.fly.value;
-		_map_gd['teleport'] = this.controls.teleport.value;
-		_map_gd['exploration_blobber'] = this.controls.blobber.checked;
+		_map_gd['order'] = this.controls.map_general.order.value;
+		_map_gd['ground truth'] = this.controls.map_general.ground_truth.checked;
+		_map_gd['fly'] = this.controls.map_general.fly.value;
+		_map_gd['teleport'] = this.controls.map_general.teleport.value;
+		_map_gd['exploration_blobber'] = this.controls.map_general.blobber.checked;
 		_map_gd['map_type'] = this.get_checked_map_type();
+		_map_gd['images'] = this.controls.map_general.images.value;
 
 		var old_map_size = _map_gd['map size'];
-		var new_map_size = this.controls.map_size.value.split(',').map((x) => Number(x));
+		var new_map_size = this.controls.map_general.size.value.split(',').map((x) => Number(x));
 
 		if (old_map_size && (old_map_size[0] != new_map_size[0] || old_map_size[1] != new_map_size[1]) && this.current_state.map != '_unknown')
 			this.maps[this.current_state.map].resize(new_map_size);
-		if (this.controls.translate.value){
-			this.maps[this.current_state.map].translate(...this.controls.translate.value.split(',').map(z => Number(z)));
-			this.controls.translate.value = '';
+		if (this.controls.transforms.translate.value){
+			this.maps[this.current_state.map].translate(...this.controls.transforms.translate.value.split(',').map(z => Number(z)));
+			this.controls.transforms.translate.value = '';
 		}
 
-		_map_gd['map general'] = this.controls.map_general.value;
+		_map_gd['map general'] = this.controls.map_general.general.value;
 	}
 
 	load_map_presentation(map_name){
@@ -1051,19 +1078,22 @@ export class Application{
 		this.grid.resize(this.maps[map_name]['general_data']['map size']);
 
 		var _map_gd = this.maps[this.current_state.map]['general_data'];
-		this.controls.ground_truth.checked = _map_gd['ground truth'];
-		this.controls.fly.value = _map_gd['fly'];
-		this.controls.teleport.value = _map_gd['teleport']??'';
+		this.controls.map_general.ground_truth.checked = _map_gd['ground truth'];
+		this.controls.map_general.fly.value = _map_gd['fly'];
+		this.controls.map_general.teleport.value = _map_gd['teleport']??'';
 
-		this.controls.map_size.value = _map_gd['map size'];
-		this.controls.blobber.checked = _map_gd['exploration_blobber'];
-		this.controls.overhead.checked = !_map_gd['exploration_blobber'];
-		this.controls.map_types[_map_gd['map_type']].checked = true;
+		this.controls.map_general.size.value = _map_gd['map size'];
+		this.controls.map_general.blobber.checked = _map_gd['exploration_blobber'];
+		this.controls.map_general.overhead.checked = !_map_gd['exploration_blobber'];
+		this.controls.map_general.images.value = _map_gd['images']??'';
+		this.controls.map_general.types[_map_gd['map_type']].checked = true;
 
 		this.controls.map_general.value = _map_gd['map general']??'';
-		this.controls.order.value = _map_gd['order']??'';
+		this.controls.map_general.order.value = _map_gd['order']??'';
 
 		for (var coordinates in to_load) this.points[coordinates].update_field();
+		this.controls.map_general.images_box.innerHTML = '';
+		show_images(_map_gd['images'], this.controls.map_general.images_box);
 
 		if (this.current_state['marked']){
 			this.current_state['marked'].clear_pointer();
@@ -1075,9 +1105,9 @@ export class Application{
 	change_map(new_map){
 		this.save_map_data();
 
-		if (this.current_focus){
-			this.current_focus._marking.style.background = 'rgba(0, 0, 0, 0)';
-			this.current_focus = null;
+		if (this.current_focus.active){
+			this.current_focus.marking.style.background = 'rgba(0, 0, 0, 0)';
+			this.current_focus.reset();
 		}
 		if (this.map_element_overlays[this.current_state.map]){
 			this.map_element_overlays[this.current_state.map].deactivate();
@@ -1114,7 +1144,7 @@ export class Application{
 		this.save_map_data();
 		var save_data = this.maps[map_name]['general_data'];
 
-		var to_save = {'title':map_name, 'ground truth':save_data['ground truth'], 'fly':save_data['fly'], 'map_type':save_data['map_type'], 'exploration_blobber':save_data['exploration_blobber'], 'teleport':save_data['teleport'], 'map size':save_data['map size'], 'map general':save_data['map general'], 'order':save_data['order'], 'points':{}};
+		var to_save = {'title':map_name, 'ground truth':save_data['ground truth'], 'images':save_data['images'], 'fly':save_data['fly'], 'map_type':save_data['map_type'], 'exploration_blobber':save_data['exploration_blobber'], 'teleport':save_data['teleport'], 'map size':save_data['map size'], 'map general':save_data['map general'], 'order':save_data['order'], 'points':{}};
 
 		for (var point_coordinate in this.maps[map_name]['points_data']){
 			var point = this.maps[map_name]['points_data'][point_coordinate];
@@ -1194,18 +1224,18 @@ export class Application{
 			new_place_data.used = true;
 			changes.push([0, end]);
 			new_place_presentation.element.style['backgroundColor'] = 'white';
-			if (this.current_focus && this.current_focus._signature == end) this.controls.input_used.checked = true;
+			if (this.current_focus.active && this.current_focus.signature == end) this.controls.point.used.checked = true;
 		}
 		if (start && !this.maps[this.current_state.map]['points_data'][start].borders[direction]){
 			this.current_state.marked.element.style[`border${dir_to_border[direction]}`] = `1px dashed #CCCCCC`;
 			this.maps[this.current_state.map]['points_data'][start].borders[direction] = true;
 			changes.push([1, start, direction]);
-			if (this.current_focus && this.current_focus._signature == start) this.controls.input_borders[direction].checked = true;
+			if (this.current_focus.active && this.current_focus.signature == start) this.controls.point.borders[direction].checked = true;
 
 			new_place_presentation.element.style[`border${dir_to_border[(direction+2)%4]}`] = `1px dashed #CCCCCC`;
 			new_place_data.borders[(direction+2)%4] = true;
 			changes.push([1, end, (direction+2)%4]);
-			if (this.current_focus && this.current_focus._signature == end) this.controls.input_borders[(direction+2)%4].checked = true;
+			if (this.current_focus.active && this.current_focus.signature == end) this.controls.point.borders[(direction+2)%4].checked = true;
 		}
 
 		return changes;
@@ -1218,8 +1248,8 @@ export class Application{
 		var new_place_signature = this.move_in_direction(this.current_state.marked._signature, direction);
 		var new_place_data = this.maps[this.current_state.map]['points_data'][new_place_signature];
 
-		if (new_place_data && (!this.controls.ground_truth.checked || (new_place_data.used && this.maps[this.current_state.map]['points_data'][this.current_state.marked._signature].borders[direction]))){
-			if (!this.controls.ground_truth.checked){
+		if (new_place_data && (!this.controls.map_general.ground_truth.checked || (new_place_data.used && this.maps[this.current_state.map]['points_data'][this.current_state.marked._signature].borders[direction]))){
+			if (!this.controls.map_general.ground_truth.checked){
 				changes_introduced.push(...this.penetrate(new_place_signature, direction, this.current_state.marked._signature));
 			}
 			this.enforce_new_state({'map':this.current_state.map, 'signature':new_place_signature, 'direction':this.current_state.direction});
@@ -1233,7 +1263,7 @@ export class Application{
 			if (change[0] == 0){
 				var signature = change[1];
 				this.maps[this.current_state.map].points_data[signature].used = true;
-				if (this.current_focus == this.points[signature])
+				if (this.current_focus.marked == this.points[signature])
 					this.points[signature].set_focus_movables();
 				this.points[signature].proper_background();
 			}
@@ -1280,8 +1310,8 @@ export class Application{
 		var new_place_signature = this.move_in_direction(this.current_state.marked._signature, direction_proper);
 		var new_place_data = this.maps[this.current_state.map]['points_data'][new_place_signature];
 
-		if (new_place_data && (!this.controls.ground_truth.checked || (new_place_data.used && this.maps[this.current_state.map]['points_data'][this.current_state.marked._signature].borders[direction_proper]))){
-			if (!this.controls.ground_truth.checked){
+		if (new_place_data && (!this.controls.map_general.ground_truth.checked || (new_place_data.used && this.maps[this.current_state.map]['points_data'][this.current_state.marked._signature].borders[direction_proper]))){
+			if (!this.controls.map_general.ground_truth.checked){
 				changes_introduced.push(...this.penetrate(new_place_signature, direction_proper, this.current_state.marked._signature));
 			}
 
@@ -1306,39 +1336,48 @@ export class Application{
 
 	constructor(){
 		this.controls = {
+			'point':{
+				'shorthand': document.getElementById('shorthand_text'),
+				'used': document.getElementById("usable"),
+				'images': document.getElementById('images_text'),
+				'images_box': document.getElementById('point_images'),
+				'borders': ["North", "East", "South", "West"].map((direction) => document.getElementById(`${direction}_border`)),
+				'terrains':{},
+				'scripts': document.getElementById('scripts_text'),
+				'general': document.getElementById('general_text'),
+			},
+
+			'map_general':{
+				'fly': document.getElementById('fly'),
+				'teleport': document.getElementById('teleport'),
+				'order': document.getElementById('order'),
+				'blobber': document.getElementById('model_blobber'),
+				'overhead': document.getElementById('model_overhead'),
+				'general': document.getElementById('map_general'),
+
+				'types_box': document.getElementById('map_types_box'),
+				'types':{},
+				'ground_truth': document.getElementById("ground_truth"),
+				'size': document.getElementById('map_size'),
+				'images':document.getElementById('images_text_general'),
+				'images_box': document.getElementById('general_image_box'),
+			},
+
+			'transforms':{
+				'translate': document.getElementById('translate'),
+				'cutter': document.getElementById('cutter'),
+				'killer': document.getElementById('killer'),
+			},
+
 			'map_name': document.getElementById('map_name'),
-			'general_text': document.getElementById('general_text'),
-			'scripts_text': document.getElementById('scripts_text'),
-			'images_text': document.getElementById('images_text'),
-			'point_images': document.getElementById('point_images'),
+			'maps_list': document.getElementById("maps_list"),
+			'orderer': document.getElementById('orderer'),
+			'map_adder_input': document.getElementById('map_adder_input'),
+			'map_adder_button': document.getElementById('map_adder_button'),
+			'renamer': document.getElementById('rename'),
 
 			'rename': document.getElementById('rename'),
 			'save_name': document.getElementById('save_name'),
-
-			'shorthand_text': document.getElementById('shorthand_text'),
-			'fly': document.getElementById('fly'),
-			'teleport': document.getElementById('teleport'),
-			'maps_list': document.getElementById("maps_list"),
-			'ground_truth': document.getElementById("ground_truth"),
-			'map_general': document.getElementById('map_general'),
-			'terrains':{},
-			'input_used': document.getElementById("usable"),
-			'input_borders': ["North", "East", "South", "West"].map((direction) => document.getElementById(`${direction}_border`)),
-			'order': document.getElementById('order'),
-			'map_size': document.getElementById('map_size'),
-			'orderer': document.getElementById('orderer'),
-
-			'blobber': document.getElementById('model_blobber'),
-			'overhead': document.getElementById('model_overhead'),
-			'map_types_box': document.getElementById('map_types_box'),
-			'map_types':{},
-
-			'map_adder_input': document.getElementById('map_adder_input'),
-			'map_adder_button': document.getElementById('map_adder_button'),
-			'translate': document.getElementById('translate'),
-			'cutter': document.getElementById('cutter'),
-			'killer': document.getElementById('killer'),
-			'renamer': document.getElementById('rename')
 		};
 
 		if (_CONFIG_GAME in GAME_DATA) this._game_config = GAME_DATA[_CONFIG_GAME];
@@ -1357,7 +1396,7 @@ export class Application{
 			'direction':-1,
 			'map':'_unknown'
 		}
-		this.current_focus = null;
+		this.current_focus = new Focus(this);
 
 		if ('default map size' in this._game_config) this._local_grid_default = this._game_config['default map size'];
 		else this._local_grid_default = [16, 16];
@@ -1383,7 +1422,7 @@ export class Application{
 		this.controls.orderer._entry = this;
 		this.controls.orderer.onclick = function(){
 			var base = this._entry;
-			base.maps[base.current_state.map]['general_data'].order = base.controls['order'].value;
+			base.maps[base.current_state.map]['general_data'].order = base.controls.map_general.order.value;
 
 			if (base.current_state.map != '_unknown')
 				base.map_element_overlays[base.current_state.map].deactivate();
@@ -1414,7 +1453,7 @@ export class Application{
 		document.addEventListener('keydown', function(e){
 			var base = this._entry;
 			if((e.target.tagName == 'INPUT' && e.target.getAttribute('type') != 'checkbox' && e.target.getAttribute('type') != 'radio') || e.target.tagName == 'TEXTAREA') return;
-			if (e.key == 't') base.controls.ground_truth.checked = !base.controls.ground_truth.checked;
+			if (e.key == 't') base.controls.map_general.ground_truth.checked = !base.controls.map_general.ground_truth.checked;
 
 			if (!base.current_state.marked) return;
 
@@ -1426,7 +1465,7 @@ export class Application{
 
 			if (directional_keys.includes(e.key))
 				e.preventDefault();
-			if (directional_keys.includes(e.key) && base.controls.overhead.checked){
+			if (directional_keys.includes(e.key) && base.controls.map_general.overhead.checked){
 				changes_introduced = base.process_overhead_move(e.key);
 				if (base.current_state.map && base.map_element_overlays[base.current_state.map] && changes_introduced.length) base.changer();
 				base.subsequent_changes.push([Object.assign({}, base.current_state), changes_introduced]);
@@ -1595,15 +1634,15 @@ export class Application{
 		}
 
 		this.renamer = new Renamer(this.controls.renamer, this);
-		this.killer = new Killer(this.controls.killer, this);
+		this.killer = new Killer(this.controls.transforms.killer, this);
 
-		this.controls.cutter._entry = this;
-		this.controls.cutter.onclick = function(){
+		this.controls.transforms.cutter._entry = this;
+		this.controls.transforms.cutter.onclick = function(){
 			this._entry.save_focus();
-			this._entry.current_focus = null;
+			this._entry.current_focus.reset();
 			var map = this._entry.maps[this._entry.current_state.map];
 			map.cut();
-			this._entry.controls.map_size.value = `${map.general_data['map size'][0]},${map.general_data['map size'][1]}`;
+			this._entry.controls.map_general.size.value = `${map.general_data['map size'][0]},${map.general_data['map size'][1]}`;
 			this._entry.change_map(this._entry.current_state.map);
 		};
 	}
