@@ -38,7 +38,12 @@ keys_mapping = {
         keyboard.KeyCode.from_char('@'): Keys.BACKSPACE,
         keyboard.KeyCode.from_char('y'): 'y',
         keyboard.KeyCode.from_char('+'): 't',
-        keyboard.KeyCode.from_char('/'): 'm',
+        keyboard.KeyCode.from_char('\\'): 'f',
+        keyboard.KeyCode.from_char('/'): 'g',
+        keyboard.KeyCode.from_char(';'): 'm',
+        keyboard.KeyCode.from_char('['): 'b',
+        keyboard.KeyCode.from_char(']'): 'w',
+        keyboard.KeyCode.from_char(','): 'n',
 }
 
 dead = False

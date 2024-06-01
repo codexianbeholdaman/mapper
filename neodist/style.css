@@ -33,7 +33,8 @@
 }
 
 #data{
-	position:relative;
+	position:sticky;
+	left:0;
        	display:inline-block;
 }
 
@@ -83,3 +84,6 @@ textarea{
 #killer{background-color:#880000;}
 #killer.active{background-color:#000000;}
 #killer:hover{background-color:#440000;}
+
+#point_data{display:none;}
+#point_data.active{display:block;}

@@ -1,4 +1,11 @@
 
+var GC;
+if (_CONFIG_GAME in GAME_DATA) GC = GAME_DATA[_CONFIG_GAME];
+else GC = GAME_DATA['FALLBACK'];
+var DEFAULT_BORDERS = ('borders' in GC && GC['borders'] == 'none');
+console.log(DEFAULT_BORDERS);
+//var DEFAULT_BORDERS = false;
+
 const integer_to_dir = {
 	0: {'x':0, 'y':1},
 	1: {'x':1, 'y':0},
@@ -52,7 +59,7 @@ function show_images(text, images_box){
 
 class Map{
 	static create_basic_point(){
-		return {'used':false, 'borders':[false, false, false, false], 'input':'', 'general':'', 'scripts':'', 'images':'', 'terrains':new Set()};
+		return {'used':false, 'borders':[DEFAULT_BORDERS, DEFAULT_BORDERS, DEFAULT_BORDERS, DEFAULT_BORDERS], 'input':'', 'general':'', 'scripts':'', 'images':'', 'terrains':new Set()};
 	}
 
 	translate(translate_y, translate_x){
@@ -932,16 +939,21 @@ class Focus{
 		this.app = app;
 	}
 
+	unset_lock(){
+		this.lock = false;
+	}
+
 	set(map, signature){
 		this.active = true;
 		this.map = map;
 		this.signature = signature;
 		this.marked = this.app.points[signature];
-		console.log(this.marked, signature);
+		this.app.controls.map_general.point_data.classList.add('active');
 	}
 
 	reset(){
 		this.active = false;
+		this.app.controls.map_general.point_data.classList.remove('active');
 	}
 }
 
@@ -1104,7 +1116,7 @@ class Application{
 		this.save_map_data();
 
 		if (this.current_focus.active){
-			this.current_focus.marking.style.background = 'rgba(0, 0, 0, 0)';
+			this.current_focus.marked._marking.style.background = 'rgba(0, 0, 0, 0)';
 			this.current_focus.reset();
 		}
 		if (this.map_element_overlays[this.current_state.map]){
@@ -1359,6 +1371,8 @@ class Application{
 				'size': document.getElementById('map_size'),
 				'images':document.getElementById('images_text_general'),
 				'images_box': document.getElementById('general_image_box'),
+
+				'point_data': document.getElementById('point_data'),
 			},
 
 			'transforms':{
@@ -1378,8 +1392,10 @@ class Application{
 			'save_name': document.getElementById('save_name'),
 		};
 
-		if (_CONFIG_GAME in GAME_DATA) this._game_config = GAME_DATA[_CONFIG_GAME];
-		else this._game_config = GAME_DATA['FALLBACK'];
+		this._game_config = GC;
+		console.log(GC);
+		//if (_CONFIG_GAME in GAME_DATA) this._game_config = GAME_DATA[_CONFIG_GAME];
+		//else this._game_config = GAME_DATA['FALLBACK'];
 
 		this._local_terrains = this._game_config['terrains'] ?? {};
 		this._local_map_types = this._game_config['map_types'] ?? {};

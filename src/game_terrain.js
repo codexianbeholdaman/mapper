@@ -96,7 +96,6 @@ export var GAME_DATA = {
 			'forest':create_terrain('#66FF66', 'f'),
 			'deep forest':create_terrain('#225B27', 'g'),
 			'mountains':create_terrain('#CFCFCF', 'm'),
-			'deep mountains':create_terrain('#383838', 'n'),
 			'bog':create_terrain('#CC99FF', 'b'),
 			'water':create_terrain('#99FFFF', 'w'),
 		},
@@ -106,5 +105,21 @@ export var GAME_DATA = {
 		},
 		'default map size':[32, 32],
 		'y_order':'ascending',
+	},
+
+	'U5':{
+		'terrains':{
+			'forest':create_terrain('#66FF66', 'f'),
+			'deep forest':create_terrain('#225B27', 'g'),
+			'mountains':create_terrain('#CFCFCF', 'm'),
+			'bog':create_terrain('#CC99FF', 'b'),
+			'water':create_terrain('#99FFFF', 'w'),
+		},
+		'map_types':{
+			'Dungeon':create_map_type('#9817b5', '#370542'),
+		},
+		'default map size':[32, 32],
+		'y_order':'ascending',
+		'borders':'none',
 	}
 }
