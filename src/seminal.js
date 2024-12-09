@@ -47,7 +47,7 @@ function show_images(text, images_box){
 			var pic = document.createElement('img');
 			pic.src = '../' + _CONFIG_PREFIX + image;
 			pic.alt = "image should be here";
-			pic.width = "600";
+			pic.width = "800";
 			images_box.appendChild(pic);
 		}
 	}
@@ -71,6 +71,11 @@ export class Map{
 	static create_basic_point(){ //TODO: Temporary, inelegant solution depending on CONFIG (globalists rejoice!)
 		var default_border_value = config?config.default_borders:false;
 		return {'used':false, 'borders':[default_border_value, default_border_value, default_border_value, default_border_value], 'input':'', 'general':'', 'scripts':'', 'images':'', 'terrains':new Set()};
+	}
+
+	remove_borders(){
+		for (var signature in this.points_data)
+			this.points_data[signature].borders = [true, true, true, true];
 	}
 
 	translate(translate_y, translate_x){
@@ -194,7 +199,7 @@ export class Map{
 		_map_gd['exploration_blobber'] = full_data['exploration_blobber']??true;
 		_map_gd['map general'] = full_data['map general']??'';
 		this.points_data = this.terrainer(full_data['points']);
-		_map_gd['map size'] = full_data['map size']??this.get_size(); //can be done with get_extremities
+		_map_gd['map size'] = full_data['map size']??this.get_size(); //can be done with get_extremities - REALLY? GE is used for cutting
 		_map_gd['map_type'] = full_data['map_type']??'_default';
 		_map_gd['images'] = full_data['images']??'';
 	}
@@ -691,8 +696,6 @@ class Killer{
 			else this._entry.deactivate();
 		};
 	}
-
-
 }
 
 export class Map_overlay{
@@ -708,8 +711,15 @@ export class Map_overlay{
 		return flier;
 	}
 
+	//Mechanism in case a name of the color is not defined for given type of map
 	get_colors(){
-		return this.app._local_map_types[this.app.maps[this.map_name]['general_data']['map_type']];
+		var map_type = this.app.maps[this.map_name]['general_data']['map_type'];
+		if (map_type in this.app._local_map_types)
+			return this.app._local_map_types[this.app.maps[this.map_name]['general_data']['map_type']];
+		else{
+			console.log(`A color for ${map_type} is undefined!`);
+			return '_default';
+		}
 	}
 
 	constructor(map_name, app){
@@ -936,9 +946,6 @@ class Movement_processor{
 		return [next_state, changes];
 	}
 
-	process_blobber_movement(old_state, movement_type){
-	}
-
 	static translate_state(state){
 		return {'map':state.map, 'signature':state.marked._signature.split(' ').map(x => Number(x)), 'direction':state.direction};
 	}
@@ -1109,7 +1116,7 @@ export class Application{
 		this.controls.map_general.images.value = _map_gd['images']??'';
 		this.controls.map_general.types[_map_gd['map_type']].checked = true;
 
-		this.controls.map_general.value = _map_gd['map general']??'';
+		this.controls.map_general.general.value = _map_gd['map general']??'';
 		this.controls.map_general.order.value = _map_gd['order']??'';
 
 		for (var coordinates in to_load) this.points[coordinates].update_field();
@@ -1270,6 +1277,7 @@ export class Application{
 	}
 
 	process_overhead_move(e_key){
+		this.movement_processor.define_world(this.current_state, e_key);
 		var changes_introduced = [];
 		var direction = arrow_to_dir[e_key];
 
@@ -1302,7 +1310,7 @@ export class Application{
 			this.enforce_new_state({'map':this.current_state.map, 'signature':new_place_signature, 'direction':this.current_state.direction});
 
 			//TODO: Makeshifty
-			var proper_scripts = script_transformer(new_place_data['scripts']);
+			var partial_scripts = script_transformer(new_place_data['scripts']);
 			for (var proper_script of partial_scripts){
 				if (proper_script[0] == 'T'){
 					this.movement_processor.define_world(this.current_state, e_key);
@@ -1312,7 +1320,6 @@ export class Application{
 				}
 			}
 		}
-
 
 		return changes_introduced;
 	}
@@ -1658,6 +1665,13 @@ export class Application{
 			document.body.appendChild(_a);
 			_a.click();
 			document.body.removeChild(_a);
+		};
+
+		document.getElementById('border_remover')._entry = this;
+		document.getElementById('border_remover').onclick = function(){
+			var map = this._entry.maps[this._entry.current_state.map];
+			map.remove_borders();
+			this._entry.change_map(this._entry.current_state.map);
 		};
 
 		const file_input = document.getElementById('loader');

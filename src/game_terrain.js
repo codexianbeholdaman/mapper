@@ -91,6 +91,39 @@ export var GAME_DATA = {
 		'backspace':'revert'
 	},
 
+	'U1':{
+		'terrains':{
+			'forest':create_terrain('#66FF66', 'f'),
+			'mountains':create_terrain('#CFCFCF', 'm'),
+			'water':create_terrain('#99FFFF', 'w'),
+			'block':create_terrain('#DB9572', 'b'),
+		},
+		'map_types':{
+			'Overworld':create_map_type('#965706', '#683d05'),
+			'Dungeon':create_map_type('#9817b5', '#370542'),
+		},
+		'default map size':[9, 9],
+		'y_order':'ascending',
+		'backspace':'revert',
+	},
+
+	'U3':{
+		'terrains':{
+			'forest':create_terrain('#66FF66', 'f'),
+			'deep forest':create_terrain('#225B27', 'd'),
+			'mountains':create_terrain('#CFCFCF', 'm'),
+			'water':create_terrain('#99FFFF', 'w'),
+			'block':create_terrain('#DB9572', 'b'),
+		},
+		'map_types':{
+			'Overworld':create_map_type('#965706', '#683d05'),
+			'Dungeon':create_map_type('#9817b5', '#370542'),
+		},
+		'default map size':[9, 9],
+		'y_order':'ascending',
+		'backspace':'revert',
+	},
+
 	'U4':{
 		'terrains':{
 			'forest':create_terrain('#66FF66', 'f'),
@@ -114,6 +147,18 @@ export var GAME_DATA = {
 			'mountains':create_terrain('#CFCFCF', 'm'),
 			'bog':create_terrain('#CC99FF', 'b'),
 			'water':create_terrain('#99FFFF', 'w'),
+		},
+		'map_types':{
+			'Dungeon':create_map_type('#9817b5', '#370542'),
+		},
+		'default map size':[32, 32],
+		'y_order':'ascending',
+		'borders':'none',
+	},
+
+	'U6':{
+		'terrains':{
+			'lava':create_terrain('#ff4500', 'l'),
 		},
 		'map_types':{
 			'Dungeon':create_map_type('#9817b5', '#370542'),

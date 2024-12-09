@@ -44,10 +44,15 @@ function show_images(text, images_box){
 			var pic = document.createElement('img');
 			pic.src = '../' + _CONFIG_PREFIX + image;
 			pic.alt = "image should be here";
-			pic.width = "600";
+			pic.width = "800";
 			images_box.appendChild(pic);
 		}
 	}
+}
+
+function script_transformer(scripts){
+	if (!scripts) return [];
+	return scripts.split('\n').map(x => x.split(';'));
 }
 
 class Config{
@@ -63,6 +68,11 @@ class Map{
 	static create_basic_point(){ //TODO: Temporary, inelegant solution depending on CONFIG (globalists rejoice!)
 		var default_border_value = config?config.default_borders:false;
 		return {'used':false, 'borders':[default_border_value, default_border_value, default_border_value, default_border_value], 'input':'', 'general':'', 'scripts':'', 'images':'', 'terrains':new Set()};
+	}
+
+	remove_borders(){
+		for (var signature in this.points_data)
+			this.points_data[signature].borders = [true, true, true, true];
 	}
 
 	translate(translate_y, translate_x){
@@ -683,8 +693,6 @@ class Killer{
 			else this._entry.deactivate();
 		};
 	}
-
-
 }
 
 class Map_overlay{
@@ -700,8 +708,15 @@ class Map_overlay{
 		return flier;
 	}
 
+	//Mechanism in case a name of the color is not defined for given type of map
 	get_colors(){
-		return this.app._local_map_types[this.app.maps[this.map_name]['general_data']['map_type']];
+		var map_type = this.app.maps[this.map_name]['general_data']['map_type'];
+		if (map_type in this.app._local_map_types)
+			return this.app._local_map_types[this.app.maps[this.map_name]['general_data']['map_type']];
+		else{
+			console.log(`A color for ${map_type} is undefined!`);
+			return '_default';
+		}
 	}
 
 	constructor(map_name, app){
@@ -1101,7 +1116,7 @@ class Application{
 		this.controls.map_general.images.value = _map_gd['images']??'';
 		this.controls.map_general.types[_map_gd['map_type']].checked = true;
 
-		this.controls.map_general.value = _map_gd['map general']??'';
+		this.controls.map_general.general.value = _map_gd['map general']??'';
 		this.controls.map_general.order.value = _map_gd['order']??'';
 
 		for (var coordinates in to_load) this.points[coordinates].update_field();
@@ -1262,29 +1277,27 @@ class Application{
 	}
 
 	process_overhead_move(e_key){
+		this.movement_processor.define_world(this.current_state, e_key);
 		var changes_introduced = [];
 		var direction = arrow_to_dir[e_key];
 
-		if (this.maps[this.current_state.map]['points_data'][this.current_state.marked._signature]['scripts']){
-			var partial_scripts = this.maps[this.current_state.map]['points_data'][this.current_state.marked._signature]['scripts'].split('\n');
+		var proper_scripts = script_transformer(this.maps[this.current_state.map]['points_data'][this.current_state.marked._signature]['scripts']);
+		for (var proper_script of proper_scripts){
+			var cardinal = dir_to_cardinal[direction];
+			if (proper_script[0] == 'W' && proper_script[1].includes(cardinal)){
+				var changes = this.execute_script('wilderness_movement', proper_script);
+				return changes;
+			}
 
-			for (var script of partial_scripts){
-				var proper_script = script.split(';');
-				var cardinal = dir_to_cardinal[direction];
-				if (proper_script[0] == 'W' && proper_script[1].includes(cardinal)){
-					var changes = this.execute_script('wilderness_movement', proper_script);
-					return changes;
-				}
+			if (proper_script[0] == 'WS' && proper_script[1].includes(cardinal)){
+				var changes = this.execute_script('wilderness_movement_simplified', proper_script);
+				return changes;
+			}
 
-				if (proper_script[0] == 'WS' && proper_script[1].includes(cardinal)){
-					var changes = this.execute_script('wilderness_movement_simplified', proper_script);
-					return changes;
-				}
-
-				if (proper_script[0] == 'C' && proper_script[1].includes(cardinal)){
-					var changes = this.execute_script('cyclical_movement', proper_script);
-					return changes;
-				}
+			if (proper_script[0] == 'C' && proper_script[1].includes(cardinal)){
+				console.log("AAA")
+				var changes = this.execute_script('cyclical_movement', proper_script);
+				return changes;
 			}
 		}
 
@@ -1296,13 +1309,10 @@ class Application{
 				changes_introduced.push(...this.penetrate(new_place_signature, direction, this.current_state.marked._signature));
 			}
 			this.enforce_new_state({'map':this.current_state.map, 'signature':new_place_signature, 'direction':this.current_state.direction});
-		}
 
-		//TODO: Makeshifty
-		if (this.maps[this.current_state.map]['points_data'][this.current_state.marked._signature]['scripts']){
-			var partial_scripts = this.maps[this.current_state.map]['points_data'][this.current_state.marked._signature]['scripts'].split('\n');
-			for (var script of partial_scripts){
-				var proper_script = script.split(';');
+			//TODO: Makeshifty
+			var partial_scripts = script_transformer(new_place_data['scripts']);
+			for (var proper_script of partial_scripts){
 				if (proper_script[0] == 'T'){
 					this.movement_processor.define_world(this.current_state, e_key);
 
@@ -1337,26 +1347,22 @@ class Application{
 
 		var direction_proper = ((e_key == 'ArrowUp') ? direction_int : (direction_int+2)%4);
 
-		if (this.maps[this.current_state.map]['points_data'][this.current_state.marked._signature]['scripts']){
-			var partial_scripts = this.maps[this.current_state.map]['points_data'][this.current_state.marked._signature]['scripts'].split('\n');
+		var proper_scripts = script_transformer(this.maps[this.current_state.map]['points_data'][this.current_state.marked._signature]['scripts']);
+		for (var proper_script of proper_scripts){
+			var cardinal = dir_to_cardinal[direction_proper];
+			if (proper_script[0] == 'W' && proper_script[1].includes(cardinal)){
+				var changes = this.execute_script('wilderness_movement', proper_script);
+				return changes;
+			}
 
-			for (var script of partial_scripts){
-				var proper_script = script.split(';');
-				var cardinal = dir_to_cardinal[direction_proper];
-				if (proper_script[0] == 'W' && proper_script[1].includes(cardinal)){
-					var changes = this.execute_script('wilderness_movement', proper_script);
-					return changes;
-				}
+			if (proper_script[0] == 'WS' && proper_script[1].includes(cardinal)){
+				var changes = this.execute_script('wilderness_movement_simplified', proper_script);
+				return changes;
+			}
 
-				if (proper_script[0] == 'WS' && proper_script[1].includes(cardinal)){
-					var changes = this.execute_script('wilderness_movement_simplified', proper_script);
-					return changes;
-				}
-
-				if (proper_script[0] == 'C' && proper_script[1].includes(cardinal)){
-					var changes = this.execute_script('cyclical_movement', proper_script);
-					return changes;
-				}
+			if (proper_script[0] == 'C' && proper_script[1].includes(cardinal)){
+				var changes = this.execute_script('cyclical_movement', proper_script);
+				return changes;
 			}
 		}
 
@@ -1368,17 +1374,13 @@ class Application{
 				changes_introduced.push(...this.penetrate(new_place_signature, direction_proper, this.current_state.marked._signature));
 			}
 
-			if (new_place_data && new_place_data['scripts']){
-				var partial_scripts = new_place_data['scripts'].split('\n');
-				for (var script of partial_scripts){
-					var proper_script = script.split(';');
-					//TODO: Makeshift operation - awaiting for the advent of Movement_processor proper
-					if (proper_script[0] == 'T'){
-						this.movement_processor.define_world(this.current_state, e_key);
+			var proper_scripts = script_transformer(new_place_data['scripts']);
+			for (var proper_script of proper_scripts){
+				if (proper_script[0] == 'T'){
+					this.movement_processor.define_world(this.current_state, e_key);
 
-						var changes = this.execute_script('trap_movement', proper_script);
-						return [...changes_introduced, ...changes];
-					}
+					var changes = this.execute_script('trap_movement', proper_script);
+					return [...changes_introduced, ...changes];
 				}
 			}
 			this.enforce_new_state({'map':this.current_state.map, 'signature':new_place_signature, 'direction':this.current_state.direction});
@@ -1664,6 +1666,13 @@ class Application{
 			document.body.appendChild(_a);
 			_a.click();
 			document.body.removeChild(_a);
+		};
+
+		document.getElementById('border_remover')._entry = this;
+		document.getElementById('border_remover').onclick = function(){
+			var map = this._entry.maps[this._entry.current_state.map];
+			map.remove_borders();
+			this._entry.change_map(this._entry.current_state.map);
 		};
 
 		const file_input = document.getElementById('loader');
