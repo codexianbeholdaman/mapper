@@ -68,6 +68,9 @@ export var full_mock = `
 				</div>
 				<div id="cutter"></div>
 				<div id="killer"></div>
+				<div id="border_remover"></div>
+				<div id="cyclify"></div>
+
 				<div id="map_types_box"></div>
 
 				<label for="general_images" style="font-size:17px">Map-wide Images</label> <textarea name="general_images" id="images_text_general" style="height:100px"></textarea>

@@ -1,9 +1,9 @@
 /**
  * @jest-environment jsdom
  */
-import {Application} from '../../src/seminal.js';
-import * as configs from '../../src/config.js';
-import {full_mock, click_event, Document_utils, Map_data_parser, Application_utils, set_configs} from './fundamental.js';
+import {Application} from '../../../src/seminal.js';
+import * as configs from '../../../src/config.js';
+import {full_mock, click_event, Document_utils, Map_data_parser, Application_utils, set_configs} from '../fundamental.js';
 
 
 test('script_R', () => {

@@ -120,7 +120,7 @@ export class Map{
 
 		var map_data = this.points_data;
 		for (var y=0; y<max_y; y++){
-			for (var x=0; x<max_x; x++){
+			for (var x=0; x<max_x; x++){ //There should be x=y<miny_y?min_x:0 at the start, continue erased - TODO: TEST
 				if (y<min_y && x<min_x) continue;
 				if (x<new_x && y<new_y) map_data[`${y} ${x}`] = Map.create_basic_point();
 				else if (x<old_x && y<old_y) delete map_data[`${y} ${x}`];
@@ -164,6 +164,32 @@ export class Map{
 			else points_data[signature]['terrains'] = new Set(points_data[signature]['terrains']);
 		}
 		return points_data;
+	}
+
+	//TODO: Only works on 0-based indexing
+	cyclify(){
+		var add_a_spot = ((script, direction)=>{
+			var all_scripts = script.split('\n');
+			if (all_scripts.includes(`C;${direction}`)) return script;
+			return script + (script.length==0?'':'\n') + `C;${direction}`;
+		});
+
+		var map_size = this.general_data['map size'];
+		for (var x=0; x<map_size[1]; x++){
+			var point_of_interest = this.points_data[`${0} ${x}`];
+			point_of_interest.scripts = add_a_spot(point_of_interest.scripts, 'N');
+
+			point_of_interest = this.points_data[`${map_size[0]-1} ${x}`];
+			point_of_interest.scripts = add_a_spot(point_of_interest.scripts, 'S');
+		}
+
+		for (var y=0; y<map_size[0]; y++){
+			var point_of_interest = this.points_data[`${y} ${0}`];
+			point_of_interest.scripts = add_a_spot(point_of_interest.scripts, 'W');
+
+			point_of_interest = this.points_data[`${y} ${map_size[1]-1}`];
+			point_of_interest.scripts = add_a_spot(point_of_interest.scripts, 'E');
+		}
 	}
 
 	//TODO: replace with get_extremities (but before that: cleanse code: get_extremities relise on it)
@@ -883,7 +909,7 @@ class Movement_processor{
 	}
 
 	trap_movement(proper_script){
-		var next_state = this.create_next_state(proper_script[1], proper_script[2], this.state.direction);
+		var next_state = this.create_next_state(proper_script[1], proper_script[2], proper_script[3]??this.state.direction);
 		var changes = this.mark_if_unused(next_state);
 		return [next_state, changes];
 	}
@@ -895,17 +921,18 @@ class Movement_processor{
 		return [next_state, changes];
 	}
 
-	//Current solution may not work if borders are not at minimal/maximal used coordinates
-	cyclical_movement(proper_script){
+	//Current solution may not work if borders are not at minimal/maximal used coordinates; It WON'T work for overhead movement properly - correct solution - based on key rather than position
+	//proper_script argument is an interface thing - but here, it is replaced by direction key, necessary for overhead movements - TODO: Rethink the design
+	cyclical_movement(direction){
 		var next_y = this.state.signature[0];
 		var next_x = this.state.signature[1];
 
 		var [max_y, max_x] = this.maps[this.state.map].general_data['map size'];
-		if (this.state.direction == 0 || this.state.direction == 2) next_y = (this.state.signature[0] == 0) ? max_y-1 : 0;
-		if (this.state.direction == 1) next_x = 0;
-		if (this.state.direction == 3) next_x = max_x-1;
+		if (direction == 0 || direction == 2) next_y = (this.state.signature[0] == 0) ? max_y-1 : 0;
+		if (direction == 1) next_x = 0;
+		if (direction == 3) next_x = max_x-1;
 
-		var next_state = this.create_next_state(this.state.map, `${next_y} ${next_x}`, this.state.direction);
+		var next_state = this.create_next_state(this.state.map, `${next_y} ${next_x}`, direction);
 		var changes = this.mark_if_unused(next_state);
 		return [next_state, changes];
 	}
@@ -1295,7 +1322,8 @@ export class Application{
 			}
 
 			if (proper_script[0] == 'C' && proper_script[1].includes(cardinal)){
-				var changes = this.execute_script('cyclical_movement', proper_script);
+				console.log(direction);
+				var changes = this.execute_script('cyclical_movement', direction); //Here, instead of the script, a key is necessary
 				return changes;
 			}
 		}
@@ -1360,7 +1388,7 @@ export class Application{
 			}
 
 			if (proper_script[0] == 'C' && proper_script[1].includes(cardinal)){
-				var changes = this.execute_script('cyclical_movement', proper_script);
+				var changes = this.execute_script('cyclical_movement', direction_proper);
 				return changes;
 			}
 		}
@@ -1671,6 +1699,13 @@ export class Application{
 		document.getElementById('border_remover').onclick = function(){
 			var map = this._entry.maps[this._entry.current_state.map];
 			map.remove_borders();
+			this._entry.change_map(this._entry.current_state.map);
+		};
+
+		document.getElementById('cyclify')._entry = this;
+		document.getElementById('cyclify').onclick = function(){
+			var map = this._entry.maps[this._entry.current_state.map];
+			map.cyclify();
 			this._entry.change_map(this._entry.current_state.map);
 		};
 

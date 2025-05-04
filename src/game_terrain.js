@@ -113,13 +113,18 @@ export var GAME_DATA = {
 			'deep forest':create_terrain('#225B27', 'd'),
 			'mountains':create_terrain('#CFCFCF', 'm'),
 			'water':create_terrain('#99FFFF', 'w'),
-			'block':create_terrain('#DB9572', 'b'),
+			'field':create_terrain('#DB9572', 'b'),
+
+			'gremlins': create_terrain('#096EF2', 'g'),
+			'chest': create_terrain('#F2BF09', 'c'),
+			'trap': create_terrain('#19033D', 'r'),
+			'wind': create_terrain('#F20943', 'i'),
 		},
 		'map_types':{
 			'Overworld':create_map_type('#965706', '#683d05'),
 			'Dungeon':create_map_type('#9817b5', '#370542'),
 		},
-		'default map size':[9, 9],
+		'default map size':[15, 15],
 		'y_order':'ascending',
 		'backspace':'revert',
 	},
@@ -166,5 +171,36 @@ export var GAME_DATA = {
 		'default map size':[32, 32],
 		'y_order':'ascending',
 		'borders':'none',
+	},
+
+	'Blade of Destiny':{
+		'terrains':{
+		},
+		'map_types':{
+			'Dungeon':create_map_type('#9817b5', '#370542'),
+		},
+		'default map size':[32, 32],
+		'y_order':'ascending',
+		'borders':'none',
+	},
+
+
+	'Star Trail':{
+		'terrains':{
+			'water':create_terrain('#99FFFF', 'w'),
+		},
+		'map_types':{
+			'Dungeon':create_map_type('#9817b5', '#370542'),
+		},
+		'default map size':[32, 32],
+		'y_order':'ascending',
+		'borders':'none',
+	},
+
+	'Dungeon Master':{
+		'terrains':{},
+		'map_types':{},
+		'default map size':[32, 32],
+		'y_order':'ascending',
 	}
 }
