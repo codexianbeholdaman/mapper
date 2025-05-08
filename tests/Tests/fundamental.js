@@ -70,6 +70,9 @@ export var full_mock = `
 				<div id="killer"></div>
 				<div id="border_remover"></div>
 				<div id="cyclify"></div>
+				<div id="rotate"></div>
+				<div id="copy"></div>
+				<div id="paste"><div id="paste_size"></div></div>
 
 				<div id="map_types_box"></div>
 

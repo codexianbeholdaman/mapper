@@ -58,6 +58,14 @@ function script_transformer(scripts){
 	return scripts.split('\n').map(x => x.split(';'));
 }
 
+function normalize_rectangle(corner_1, corner_2){
+	var start = corner_1.split(" ").map(x => Number(x));
+	var end = corner_2.split(" ").map(x => Number(x));
+	var proper_start = [Math.min(start[0], end[0]), Math.min(start[1], end[1])];
+	var proper_end = [Math.max(start[0], end[0]), Math.max(start[1], end[1])];
+	return [proper_start, proper_end];
+}
+
 export class Config{
 	constructor(){
 		if (_CONFIG_GAME in GAME_DATA) this.game = GAME_DATA[_CONFIG_GAME];
@@ -67,10 +75,19 @@ export class Config{
 }
 var config;
 
+//Map represents only the map data
 export class Map{
 	static create_basic_point(){ //TODO: Temporary, inelegant solution depending on CONFIG (globalists rejoice!)
 		var default_border_value = config?config.default_borders:false;
 		return {'used':false, 'borders':[default_border_value, default_border_value, default_border_value, default_border_value], 'input':'', 'general':'', 'scripts':'', 'images':'', 'terrains':new Set()};
+	}
+
+	static copy_point(point){
+		var new_point = {};
+		for (var x of ['used', 'input', 'general', 'scripts', 'images']) new_point[x] = point[x]
+		new_point['borders'] = [...point['borders']];
+		new_point['terrains'] = new Set(point['terrains']);
+		return new_point;
 	}
 
 	remove_borders(){
@@ -191,8 +208,18 @@ export class Map{
 			point_of_interest.scripts = add_a_spot(point_of_interest.scripts, 'E');
 		}
 	}
+	
+	//TODO: Later: Fix self-scripting to refer properly to different places
+	rotate(){
+		var new_points = {}, map_size = this.general_data['map size'];
+		for (var y=0; y<map_size[0]; y++){
+			for (var x=0; x<map_size[1]; x++) new_points[`${x} ${map_size[0]-1-y}`] = this.points_data[`${y} ${x}`];
+		}
+		this.resize([map_size[1], map_size[0]]);
+		this.points_data = new_points;
+	}
 
-	//TODO: replace with get_extremities (but before that: cleanse code: get_extremities relise on it)
+	//TODO: replace with get_extremities (but before that: cleanse code: get_extremities relies on it)
 	get_size(){
 		var all_points = Object.keys(this.points_data).map((x) => (x.split(' ').map((y) => Number(y))));
 
@@ -385,6 +412,28 @@ class Point{
 
 		this.element.addEventListener('click', function(){
 			var base = this.general.base;
+			if (base.copier.active) return;
+			if (base.paster.active){
+				var part = base.full_copy;
+				if (part.fragment){
+					var signature = this._signature.split(" ").map(x => Number(x));
+			
+					var bottom_border = Math.min(base.full_copy.size[0], base.maps[base.current_state.map].general_data['map size'][0]-signature[0]);
+					var right_border = Math.min(base.full_copy.size[1], base.maps[base.current_state.map].general_data['map size'][1]-signature[1]);
+
+					for (var i=0; i<bottom_border; i++){
+						for (var j=0; j<right_border; j++){
+							base.maps[base.current_state.map]['points_data'][`${i+signature[0]} ${j+signature[1]}`] = Map.copy_point(part.fragment[`${i} ${j}`]);
+						}
+					}
+
+					var to_load = base.maps[base.current_state.map]['points_data'];
+					for (var coordinates in to_load) base.points[coordinates].update_field();
+				}
+				base.paster.deactivate();
+				return;
+			}
+
 			if (base.killer.active){
 				this.general.cell_killer();
 				return;
@@ -407,6 +456,30 @@ class Point{
 			}
 			base.subsequent_changes.push([Object.assign({}, base.current_state), data_to_push]);
 			base.update_presentation(base.current_state);
+		});
+
+		this.element.addEventListener('mousedown', function(){
+			if (this.general.base.copier.active){
+				if (this.general.base.full_copy.end){
+					var part = this.general.base.full_copy;
+
+					var [proper_start, proper_end] = normalize_rectangle(part.start, part.end);
+					this.general.base.grid.clean_shading(proper_start, proper_end);
+				}
+
+				this.general.base.full_copy.map = this.general.base.current_state.map;
+				this.general.base.full_copy.start = this._signature;
+			}
+		});
+
+		this.element.addEventListener('mouseup', function(){
+			if (this.general.base.copier.active){
+				this.general.base.full_copy.end = this._signature;
+				var part = this.general.base.full_copy;
+
+				var [proper_start, proper_end] = normalize_rectangle(part.start, part.end);
+				this.general.base.grid.create_shading(proper_start, proper_end);
+			}
 		});
 
 		this.element.addEventListener(_CONFIG_ACCESS_POINT_DATA, function(_event){
@@ -668,23 +741,41 @@ class Grid{
 			else this.column_labels[x].style.display = 'none';
 		}
 	}
+
+	create_shading(proper_start, proper_end){
+		var copy_bordering_color = 'rgba(0, 255, 0, 0.5)';
+		var copy_bordering_length = '10px';
+
+		var range = ((start, end) => [...Array(end-start+1).keys()].map((x) => start+x));
+
+		var points_to_cover = [
+			...range(proper_start[0], proper_end[0]).map((x) => [x, proper_start[1]]), 
+			...range(proper_start[0], proper_end[0]).map((x) => [x, proper_end[1]]),
+			...range(proper_start[1], proper_end[1]).map((x) => [proper_start[0], x]), 
+			...range(proper_start[1], proper_end[1]).map((x) => [proper_end[0], x])
+		];
+
+		for (var point of points_to_cover){
+			this.points[`${point[0]} ${point[1]}`].element.style['box-shadow'] = `inset ${(point[1]==proper_start[1]) ? copy_bordering_length : 0} ${(point[0]==proper_start[0]) ? copy_bordering_length : 0} ${copy_bordering_color}, inset -${(point[1]==proper_end[1]) ? copy_bordering_length : 0} -${point[0]==proper_end[0] ? copy_bordering_length : 0} ${copy_bordering_color}`;
+		}
+	}
+
+	clean_shading(proper_start, proper_end){
+		var range = ((start, end) => [...Array(end-start+1).keys()].map((x) => start+x));
+		var points_to_cover = [
+			...range(proper_start[0], proper_end[0]).map((x) => [x, proper_start[1]]), 
+			...range(proper_start[0], proper_end[0]).map((x) => [x, proper_end[1]]),
+			...range(proper_start[1], proper_end[1]).map((x) => [proper_start[0], x]), 
+			...range(proper_start[1], proper_end[1]).map((x) => [proper_end[0], x])
+		];
+
+		for (var point of points_to_cover){
+			this.points[`${point[0]} ${point[1]}`].element.style['box-shadow'] = ``;
+		}
+	}
 }
 
-class Renamer{
-	activate(){
-		this.app.controls.map_name.disabled = false;
-		this.active = true;
-		this.element.classList.add('active');
-	}
-
-	deactivate(valid=true){
-		this.app.controls.map_name.disabled = true;
-		if (valid)
-			this.app.rename_map(this.app.current_state.map, this.app.controls.map_name.value);
-		this.active = false;
-		this.element.classList.remove('active');
-	}
-
+class Active_button{
 	constructor(element, app){
 		this.active = false;
 		this.app = app;
@@ -696,31 +787,81 @@ class Renamer{
 			else this._entry.deactivate();
 		};
 	}
-}
-
-class Killer{
 	activate(){
 		this.active = true;
 		this.element.classList.add('active');
+	}
+	deactivate(){
+		this.active = false;
+		this.element.classList.remove('active');
+	}
+}
+
+//TODO: Inheritance of the constructor
+class Renamer extends Active_button{
+	activate(){
+		super.activate();
+		this.app.controls.map_name.disabled = false;
+	}
+
+	deactivate(valid=true){
+		super.deactivate();
+		this.app.controls.map_name.disabled = true;
+		if (valid)
+			this.app.rename_map(this.app.current_state.map, this.app.controls.map_name.value);
+	}
+}
+
+class Killer extends Active_button{
+	activate(){
+		super.activate();
 		this.app.grid.grid.style.cursor = 'cell';
 	}
 
 	deactivate(){
-		this.active = false;
-		this.element.classList.remove('active');
+		super.deactivate();
 		this.app.grid.grid.style.cursor = 'default';
 	}
+}
 
-	constructor(element, app){
-		this.active = false;
-		this.app = app;
-		this.element = element;
+class Copier extends Active_button{
+	activate(){
+		super.activate();
+		this.app.grid.grid.style.cursor = 'crosshair';
+	}
 
-		element._entry = this;
-		element.onclick = function(){
-			if (!this._entry.active) this._entry.activate();
-			else this._entry.deactivate();
-		};
+	deactivate(){
+		super.deactivate();
+		this.app.grid.grid.style.cursor = 'default';
+
+		var part = this.app.full_copy;
+		if (part.end){
+			part.fragment = {};
+			var [proper_start, proper_end] = normalize_rectangle(part.start, part.end);
+
+			for (var i=proper_start[0]; i<=proper_end[0]; i++){
+				for (var j=proper_start[1]; j<=proper_end[1]; j++){
+					part.fragment[`${i-proper_start[0]} ${j-proper_start[1]}`] = Map.copy_point(this.app.maps[part.map]['points_data'][`${i} ${j}`]);
+				}
+			}
+			this.app.grid.clean_shading(proper_start, proper_end);
+
+			this.app.full_copy.size = [proper_end[0]-proper_start[0]+1, proper_end[1]-proper_start[1]+1];
+			this.app.full_copy.end = "";
+			this.app.controls.transforms.paste_size.innerHTML = `${proper_end[0]-proper_start[0]+1}x${proper_end[1]-proper_start[1]+1}`;
+		}
+	}
+}
+
+class Paster extends Active_button{
+	activate(){
+		super.activate();
+		this.app.grid.grid.style.cursor = 'crosshair';
+	}
+
+	deactivate(){
+		super.deactivate();
+		this.app.grid.grid.style.cursor = 'default';
 	}
 }
 
@@ -1322,7 +1463,6 @@ export class Application{
 			}
 
 			if (proper_script[0] == 'C' && proper_script[1].includes(cardinal)){
-				console.log(direction);
 				var changes = this.execute_script('cyclical_movement', direction); //Here, instead of the script, a key is necessary
 				return changes;
 			}
@@ -1450,6 +1590,9 @@ export class Application{
 				'translate': document.getElementById('translate'),
 				'cutter': document.getElementById('cutter'),
 				'killer': document.getElementById('killer'),
+				'copy': document.getElementById('copy'),
+				'paste': document.getElementById('paste'),
+				'paste_size': document.getElementById('paste_size'),
 			},
 
 			'map_name': document.getElementById('map_name'),
@@ -1709,6 +1852,14 @@ export class Application{
 			this._entry.change_map(this._entry.current_state.map);
 		};
 
+		document.getElementById('rotate')._entry = this;
+		document.getElementById('rotate').onclick = function(){
+			var map = this._entry.maps[this._entry.current_state.map];
+			map.rotate();
+			this._entry.controls.map_general.size.value = `${map.general_data['map size'][0]},${map.general_data['map size'][1]}`;
+			this._entry.change_map(this._entry.current_state.map);
+		};
+
 		const file_input = document.getElementById('loader');
 		file_input._entry = this;
 		file_input.onchange = () => {
@@ -1735,6 +1886,10 @@ export class Application{
 
 		this.renamer = new Renamer(this.controls.renamer, this);
 		this.killer = new Killer(this.controls.transforms.killer, this);
+
+		this.full_copy = {};
+		this.copier = new Copier(this.controls.transforms.copy, this);
+		this.paster = new Paster(this.controls.transforms.paste, this);
 
 		this.controls.transforms.cutter._entry = this;
 		this.controls.transforms.cutter.onclick = function(){

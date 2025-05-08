@@ -69,21 +69,21 @@ textarea{
 	font-family: Arial;
 }
 
-#rename{
-	background-color:#880000;
-}
-
-#rename.active{
-	background-color:#000000;
-}
-
-#rename:hover{
-	background-color:#440000;
-}
+#rename{background-color:#880000;}
+#rename.active{background-color:#000000;}
+#rename:hover{background-color:#440000;}
 
 #killer{background-color:#880000;}
 #killer.active{background-color:#000000;}
 #killer:hover{background-color:#440000;}
+
+#copy{background-color:#880000;}
+#copy.active{background-color:#000000;}
+#copy:hover{background-color:#440000;}
+
+#paste{background-color:#880000;}
+#paste.active{background-color:#000000;}
+#paste:hover{background-color:#440000;}
 
 #point_data{display:none;}
 #point_data.active{display:block;}
